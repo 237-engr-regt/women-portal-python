@@ -1,106 +1,87 @@
-from flask import Flask, render_template, request, redirect
-import sqlite3
+from flask import Flask, render_template, request
+import os
 import smtplib
 from email.mime.text import MIMEText
 
 app = Flask(__name__)
 
-# ---------------- DATABASE SETUP ----------------
-def init_db():
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS complaints (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        phone TEXT,
-        address TEXT,
-        pincode TEXT,
-        complaint TEXT,
-        email TEXT
-    )
-    """)
-    conn.commit()
-    conn.close()
+# ==============================
+# CONFIG (IMPORTANT)
+# ==============================
 
-init_db()
+ADMIN_EMAIL = "yourgmail@gmail.com"   # 👈 yahan apna gmail daal
+APP_PASSWORD = "your_app_password"    # 👈 Gmail App Password (NOT normal password)
 
-# ---------------- HOME PAGE ----------------
-@app.route("/")
+
+# ==============================
+# HOME PAGE
+# ==============================
+
+@app.route('/')
 def home():
-    return render_template("index.html")
+    return render_template('index.html')
 
-# ---------------- SUBMIT FORM ----------------
-@app.route("/submit", methods=["POST"])
-def submit():
+
+# ==============================
+# SEND EMAIL FUNCTION
+# ==============================
+
+def send_email(name, email, message):
     try:
-        name = request.form["name"]
-        phone = request.form["phone"]
-        address = request.form["address"]
-        pincode = request.form["pincode"]
-        complaint = request.form["complaint"]
-        email = request.form["email"]
-
-        # -------- SAVE TO DATABASE --------
-        conn = sqlite3.connect("database.db")
-        cursor = conn.cursor()
-        cursor.execute("""
-        INSERT INTO complaints (name, phone, address, pincode, complaint, email)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """, (name, phone, address, pincode, complaint, email))
-        conn.commit()
-        conn.close()
-
-        print("Data saved successfully")
-
-        # -------- SEND EMAIL --------
-        try:
-            sender_email = "masountajinder@gmail.com"
-            receiver_email = "masountajinder@gmail.com"
-            password = "uwebitvcitxmpbhi"
-
-            msg = MIMEText(f"""
-New Complaint Received:
+        subject = "New Form Submission"
+        body = f"""
+New submission received:
 
 Name: {name}
-Phone: {phone}
-Address: {address}
-Pincode: {pincode}
-Complaint: {complaint}
 Email: {email}
-""")
+Message: {message}
+"""
 
-            msg['Subject'] = "New Complaint"
-            msg['From'] = sender_email
-            msg['To'] = receiver_email
+        msg = MIMEText(body)
+        msg['Subject'] = subject
+        msg['From'] = ADMIN_EMAIL
+        msg['To'] = ADMIN_EMAIL
 
-            server = smtplib.SMTP("smtp.gmail.com", 587)
-            server.starttls()
-            server.login(sender_email, password)
-            server.send_message(msg)
-            server.quit()
+        # Gmail SMTP
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(ADMIN_EMAIL, APP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
 
-            print("Email sent successfully")
-
-        except Exception as e:
-            print("Email error:", e)
-
-        return redirect("/")
+        print("✅ Email sent successfully")
 
     except Exception as e:
-        print("Submit error:", e)
-        return "Internal Server Error"
+        print("❌ Email error:", e)
 
-# ---------------- VIEW DATA ----------------
-@app.route("/view")
-def view():
-    conn = sqlite3.connect("database.db")
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM complaints")
-    data = cursor.fetchall()
-    conn.close()
-    return render_template("view.html", data=data)
 
-# ---------------- RUN APP ----------------
+# ==============================
+# FORM SUBMIT
+# ==============================
+
+@app.route('/submit', methods=['POST'])
+def submit():
+    try:
+        name = request.form.get('name')
+        email = request.form.get('email')
+        message = request.form.get('message')
+
+        print("📩 New Form Data:")
+        print(name, email, message)
+
+        # Send email to admin
+        send_email(name, email, message)
+
+        return "✅ Form submitted successfully!"
+
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+
+
+# ==============================
+# RUN (RENDER COMPATIBLE)
+# ==============================
+
 if __name__ == "__main__":
-    app.run()
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
