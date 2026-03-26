@@ -1,15 +1,35 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin</title>
-</head>
-<body>
+<link rel="stylesheet" href="/static/style.css">
 
-<h2>Admin Panel (Basic)</h2>
+<div class="navbar">Admin Panel</div>
 
-<p>This is optional page (future use)</p>
+<div class="container">
+<div class="card">
 
-<a href="/">Back</a>
+<table border="1" width="100%" cellpadding="10">
+<tr>
+    <th>ID</th>
+    <th>Name</th>
+    <th>Complaint</th>
+    <th>Reply</th>
+</tr>
 
+{% for row in data %}
+<tr>
+    <td>{{row[1]}}</td>
+    <td>{{row[2]}}</td>
+    <td>{{row[9]}}</td>
+    <td>
+        <form action="/reply/{{row[1]}}" method="POST">
+            <input name="reply">
+            <button>Send</button>
+        </form>
+    </td>
+</tr>
+{% endfor %}
+
+</table>
+
+</div>
+</div>
 </body>
 </html>

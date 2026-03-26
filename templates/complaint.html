@@ -1,12 +1,22 @@
-<!-- templates/complaint.html -->
-<form method="POST" action="/submit">
-<input name="name" placeholder="Name"><br>
-<input name="address" placeholder="Address"><br>
-<input name="contact" placeholder="Contact"><br>
-<input name="email" placeholder="Email"><br>
-<input name="unit" placeholder="Unit"><br>
-<input name="wo" placeholder="W/O"><br>
-<input name="quarter" placeholder="Quarter No"><br>
-<textarea name="complaint" placeholder="Complaint"></textarea><br>
-<button type="submit">Submit</button>
+<link rel="stylesheet" href="/static/style.css">
+
+<div class="navbar">Submit Complaint</div>
+
+<div class="container">
+<div class="card">
+
+<form action="/submit" method="POST">
+    <input name="name" placeholder="Name" required>
+    <input name="address" placeholder="Address">
+    <input name="contact" placeholder="Contact">
+    <input name="email" placeholder="Email">
+    <input name="unit" placeholder="Unit">
+    <input name="wo" placeholder="WO">
+    <input name="quarter" placeholder="Quarter">
+    <textarea name="complaint" placeholder="Your Complaint"></textarea>
+
+    <button type="submit">Submit</button>
 </form>
+
+</div>
+</div>
