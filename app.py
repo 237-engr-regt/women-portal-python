@@ -9,6 +9,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# ✅ CORRECT API KEY USE
 resend.api_key = os.environ.get("RESEND_API_KEY")
 
 # -------- DATABASE --------
@@ -48,45 +49,52 @@ def complaint():
 # -------- SUBMIT --------
 @app.route('/submit', methods=['POST'])
 def submit():
-    complaint_id = "CMP" + str(random.randint(10000, 99999))
+    try:
+        complaint_id = "CMP" + str(random.randint(10000, 99999))
 
-    data = (
-        complaint_id,
-        request.form['name'],
-        request.form['address'],
-        request.form['contact'],
-        request.form['email'],
-        request.form['unit'],
-        request.form['wo'],
-        request.form['quarter'],
-        request.form['complaint']
-    )
+        data = (
+            complaint_id,
+            request.form.get('name'),
+            request.form.get('address'),
+            request.form.get('contact'),
+            request.form.get('email'),
+            request.form.get('unit'),
+            request.form.get('wo'),
+            request.form.get('quarter'),
+            request.form.get('complaint')
+        )
 
-    conn = sqlite3.connect("database.db")
-    c = conn.cursor()
-    c.execute("""
-        INSERT INTO complaints 
-        (complaint_id, name, address, contact, email, unit, wo, quarter, complaint)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, data)
-    conn.commit()
-    conn.close()
+        conn = sqlite3.connect("database.db")
+        c = conn.cursor()
+        c.execute("""
+            INSERT INTO complaints 
+            (complaint_id, name, address, contact, email, unit, wo, quarter, complaint)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, data)
+        conn.commit()
+        conn.close()
 
-    # EMAIL TO ADMIN
-    resend.Emails.send({
-        "from": "onboarding@resend.dev",
-        "to": "your_admin_email@gmail.com",
-        "subject": "🚨 New Complaint",
-        "html": f"<h3>New Complaint ID: {complaint_id}</h3><p>{data}</p>"
-    })
+        # ✅ SAFE EMAIL SEND
+        try:
+            resend.Emails.send({
+                "from": "onboarding@resend.dev",
+                "to": "your_admin_email@gmail.com",
+                "subject": "New Complaint",
+                "html": f"<h3>ID: {complaint_id}</h3><p>{data}</p>"
+            })
+        except Exception as e:
+            print("Email error:", e)
 
-    return f"✅ Complaint Submitted! Your ID: {complaint_id}"
+        return f"✅ Complaint Submitted! Your ID: {complaint_id}"
+
+    except Exception as e:
+        return f"Error: {str(e)}"
 
 # -------- TRACK --------
 @app.route('/track', methods=['GET', 'POST'])
 def track():
     if request.method == 'POST':
-        cid = request.form['cid']
+        cid = request.form.get('cid')
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
         c.execute("SELECT * FROM complaints WHERE complaint_id=?", (cid,))
@@ -109,7 +117,7 @@ def admin():
 # -------- REPLY --------
 @app.route('/reply/<cid>', methods=['POST'])
 def reply(cid):
-    reply_text = request.form['reply']
+    reply_text = request.form.get('reply')
 
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
