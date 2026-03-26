@@ -1,23 +1,55 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Women Safety Complaint</title>
-</head>
-<body>
+from flask import Flask, render_template, request, redirect
+import sqlite3
+import os
 
-<h2>Complaint Form</h2>
+app = Flask(__name__)
 
-<form action="/submit" method="POST">
-    <input type="text" name="name" placeholder="Enter Name" required><br><br>
-    
-    <input type="email" name="email" placeholder="Enter Email" required><br><br>
-    
-    <input type="text" name="mobile" placeholder="Enter Mobile" required><br><br>
-    
-    <textarea name="message" placeholder="Enter your complaint" required></textarea><br><br>
-    
-    <button type="submit">Submit</button>
-</form>
+# Create database table
+def init_db():
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            mobile TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
-</body>
-</html>
+init_db()
+
+# Home page
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+# Save data
+@app.route('/submit', methods=['POST'])
+def submit():
+    name = request.form['name']
+    mobile = request.form['mobile']
+
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO users (name, mobile) VALUES (?, ?)", (name, mobile))
+    conn.commit()
+    conn.close()
+
+    return redirect('/')
+
+# View data
+@app.route('/view')
+def view():
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")
+    data = cursor.fetchall()
+    conn.close()
+
+    return render_template('view.html', data=data)
+
+# RUN (IMPORTANT for Render)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
