@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>View Data</title>
+    <title>All Complaints</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body style="font-family: Arial; text-align:center;">
+<body>
 
-<h2>Saved Data</h2>
+<h1>All Complaints</h1>
 
 <table border="1" align="center">
 <tr>
     <th>ID</th>
     <th>Name</th>
     <th>Mobile</th>
+    <th>Address</th>
+    <th>Unit</th>
+    <th>Complaint</th>
+    <th>Email</th>
 </tr>
 
 {% for row in data %}
@@ -19,13 +24,17 @@
     <td>{{ row[0] }}</td>
     <td>{{ row[1] }}</td>
     <td>{{ row[2] }}</td>
+    <td>{{ row[3] }}</td>
+    <td>{{ row[4] }}</td>
+    <td>{{ row[5] }}</td>
+    <td>{{ row[6] }}</td>
 </tr>
 {% endfor %}
 
 </table>
 
-<br><br>
-<a href="/">Back</a>
+<br>
+<a href="/">Back to Home</a>
 
 </body>
 </html>

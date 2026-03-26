@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Women Portal</title>
+    <title>Women Complaint Form</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body style="font-family: Arial; text-align:center; margin-top:50px;">
+<body>
 
-<h2>Women Complaint Form</h2>
+<h1>Women Complaint Form</h1>
 
 <form action="/submit" method="POST">
-    <input type="text" name="name" placeholder="Enter Name" required><br><br>
-    <input type="text" name="mobile" placeholder="Enter Mobile Number" required><br><br>
+    <input name="name" placeholder="Name" required><br>
+    <input name="mobile" placeholder="Mobile" required><br>
+    <input name="address" placeholder="Address"><br>
+    <input name="unit" placeholder="Unit/Coy"><br>
+    <input name="complaint" placeholder="Complaint"><br>
+    <input name="email" placeholder="Email"><br>
+
     <button type="submit">Submit</button>
 </form>
 
-<br><br>
+<br>
 <a href="/view">View Data</a>
 
 </body>
