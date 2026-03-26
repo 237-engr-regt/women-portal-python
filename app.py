@@ -1,87 +1,58 @@
 from flask import Flask, render_template, request
 import os
-import smtplib
-from email.mime.text import MIMEText
 
 app = Flask(__name__)
 
-# ==============================
-# CONFIG (IMPORTANT)
-# ==============================
-
-ADMIN_EMAIL = "yourgmail@gmail.com"   # 👈 yahan apna gmail daal
-APP_PASSWORD = "your_app_password"    # 👈 Gmail App Password (NOT normal password)
-
-
-# ==============================
-# HOME PAGE
-# ==============================
-
+# ---------------- HOME PAGE ----------------
 @app.route('/')
 def home():
     return render_template('index.html')
 
 
-# ==============================
-# SEND EMAIL FUNCTION
-# ==============================
-
-def send_email(name, email, message):
-    try:
-        subject = "New Form Submission"
-        body = f"""
-New submission received:
-
-Name: {name}
-Email: {email}
-Message: {message}
-"""
-
-        msg = MIMEText(body)
-        msg['Subject'] = subject
-        msg['From'] = ADMIN_EMAIL
-        msg['To'] = ADMIN_EMAIL
-
-        # Gmail SMTP
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()
-        server.login(ADMIN_EMAIL, APP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-
-        print("✅ Email sent successfully")
-
-    except Exception as e:
-        print("❌ Email error:", e)
-
-
-# ==============================
-# FORM SUBMIT
-# ==============================
-
-@app.route('/submit', methods=['POST'])
+# ---------------- SUBMIT FORM ----------------
+@app.route('/submit', methods=['GET', 'POST'])
 def submit():
-    try:
-        name = request.form.get('name')
-        email = request.form.get('email')
-        message = request.form.get('message')
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name')
+            email = request.form.get('email')
+            message = request.form.get('message')
 
-        print("📩 New Form Data:")
-        print(name, email, message)
+            print("Form Data:", name, email, message)
 
-        # Send email to admin
-        send_email(name, email, message)
+            return f"""
+            <h2>✅ Form Submitted Successfully!</h2>
+            <p><b>Name:</b> {name}</p>
+            <p><b>Email:</b> {email}</p>
+            <p><b>Message:</b> {message}</p>
+            <a href="/">⬅ Back</a>
+            """
 
-        return "✅ Form submitted successfully!"
+        except Exception as e:
+            return f"❌ Error: {str(e)}"
 
-    except Exception as e:
-        return f"❌ Error: {str(e)}"
+    return "⚠️ Please submit form from homepage"
 
 
-# ==============================
-# RUN (RENDER COMPATIBLE)
-# ==============================
+# ---------------- ADMIN PAGE ----------------
+@app.route('/admin')
+def admin():
+    return render_template('admin.html')
 
+
+# ---------------- DASHBOARD ----------------
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
+
+# ---------------- VIEW PAGE ----------------
+@app.route('/view')
+def view():
+    return render_template('view.html')
+
+
+# ---------------- RUN (RENDER SAFE) ----------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
