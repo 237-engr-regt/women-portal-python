@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, session
 import sqlite3
 import os
 from dotenv import load_dotenv
@@ -9,7 +9,10 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# ✅ CORRECT API KEY USE
+# 🔐 Secret key (login ke liye)
+app.secret_key = "secret123"
+
+# ✅ API KEY (FIXED INDENTATION)
 resend.api_key = os.environ.get("RESEND_API_KEY")
 
 # -------- DATABASE --------
@@ -36,15 +39,42 @@ def init_db():
 
 init_db()
 
+# -------- EMAIL FUNCTION --------
+def send_email(data):
+    try:
+        print("📤 Sending email...")
+
+        resend.Emails.send({
+            "from": "Resend <onboarding@resend.dev>",
+            "to": ["masountajinder@gmail.com"],
+            "subject": "🚨 New Complaint Received",
+            "html": f"""
+                <h2>New Complaint Submitted</h2>
+                <p><b>ID:</b> {data[0]}</p>
+                <p><b>Name:</b> {data[1]}</p>
+                <p><b>Email:</b> {data[4]}</p>
+                <p><b>Contact:</b> {data[3]}</p>
+                <p><b>Complaint:</b><br>{data[8]}</p>
+            """
+        })
+
+        print("✅ Email sent successfully")
+
+    except Exception as e:
+        print("❌ Email error:", str(e))
+
+
 # -------- LANDING --------
 @app.route('/')
 def landing():
     return render_template("landing.html")
 
+
 # -------- FORM --------
 @app.route('/complaint')
 def complaint():
     return render_template("complaint.html")
+
 
 # -------- SUBMIT --------
 @app.route('/submit', methods=['POST'])
@@ -74,49 +104,77 @@ def submit():
         conn.commit()
         conn.close()
 
-        # ✅ SAFE EMAIL SEND
-        try:
-            resend.Emails.send({
-                "from": "onboarding@resend.dev",
-                "to": "your_admin_email@gmail.com",
-                "subject": "New Complaint",
-                "html": f"<h3>ID: {complaint_id}</h3><p>{data}</p>"
-            })
-        except Exception as e:
-            print("Email error:", e)
+        # 📧 Email send
+        send_email(data)
 
         return f"✅ Complaint Submitted! Your ID: {complaint_id}"
 
     except Exception as e:
+        print("❌ Submit error:", str(e))
         return f"Error: {str(e)}"
+
 
 # -------- TRACK --------
 @app.route('/track', methods=['GET', 'POST'])
 def track():
     if request.method == 'POST':
         cid = request.form.get('cid')
+
         conn = sqlite3.connect("database.db")
         c = conn.cursor()
         c.execute("SELECT * FROM complaints WHERE complaint_id=?", (cid,))
         data = c.fetchone()
         conn.close()
+
         return render_template("track.html", data=data)
 
     return render_template("track.html")
 
+
+# -------- LOGIN --------
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if username == "admin" and password == "1234":
+            session['admin'] = True
+            return redirect('/admin')
+        else:
+            return "❌ Wrong Username or Password"
+
+    return render_template("login.html")
+
+
 # -------- ADMIN --------
 @app.route('/admin')
 def admin():
+    if not session.get('admin'):
+        return redirect('/login')
+
     conn = sqlite3.connect("database.db")
     c = conn.cursor()
     c.execute("SELECT * FROM complaints")
     data = c.fetchall()
     conn.close()
+
     return render_template("admin.html", data=data)
+
+
+# -------- LOGOUT --------
+@app.route('/logout')
+def logout():
+    session.pop('admin', None)
+    return redirect('/login')
+
 
 # -------- REPLY --------
 @app.route('/reply/<cid>', methods=['POST'])
 def reply(cid):
+    if not session.get('admin'):
+        return redirect('/login')
+
     reply_text = request.form.get('reply')
 
     conn = sqlite3.connect("database.db")
@@ -126,6 +184,7 @@ def reply(cid):
     conn.close()
 
     return redirect('/admin')
+
 
 # -------- RUN --------
 if __name__ == "__main__":

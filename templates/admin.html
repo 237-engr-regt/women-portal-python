@@ -1,4 +1,11 @@
-<link rel="stylesheet" href="/static/style.css">
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
 
 <div class="navbar">Admin Panel</div>
 
@@ -31,5 +38,31 @@
 
 </div>
 </div>
+
+<!-- 🔊 SOUND -->
+<audio id="alertSound">
+    <source src="https://www.soundjay.com/buttons/sounds/button-3.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+    // 🔁 Auto refresh every 5 sec
+    setInterval(function(){
+        location.reload();
+    }, 5000);
+
+    // 🔊 Play sound if new complaint added
+    let lastCount = document.querySelectorAll("table tr").length;
+
+    setInterval(function(){
+        let currentCount = document.querySelectorAll("table tr").length;
+
+        if(currentCount > lastCount){
+            document.getElementById("alertSound").play();
+        }
+
+        lastCount = currentCount;
+    }, 5000);
+</script>
+
 </body>
 </html>
