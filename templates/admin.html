@@ -27,7 +27,7 @@
     <td>{{row[9]}}</td>
     <td>
         <form action="/reply/{{row[1]}}" method="POST">
-            <input name="reply">
+            <input name="reply" placeholder="Type reply">
             <button>Send</button>
         </form>
     </td>
@@ -40,28 +40,31 @@
 </div>
 
 <!-- 🔊 SOUND -->
-<audio id="alertSound">
-    <source src="https://www.soundjay.com/buttons/sounds/button-3.mp3" type="audio/mpeg">
-</audio>
+<audio id="alertSound" src="/static/alert.mp3"></audio>
 
 <script>
-    // 🔁 Auto refresh every 5 sec
-    setInterval(function(){
-        location.reload();
-    }, 5000);
+let lastCount = {{ data|length }};
 
-    // 🔊 Play sound if new complaint added
-    let lastCount = document.querySelectorAll("table tr").length;
+// 🧠 Check new complaints (no full reload)
+setInterval(() => {
+    fetch('/check')
+    .then(res => res.json())
+    .then(res => {
 
-    setInterval(function(){
-        let currentCount = document.querySelectorAll("table tr").length;
+        if (res.count > lastCount) {
+            console.log("New complaint आया!");
 
-        if(currentCount > lastCount){
+            // 🔊 Play sound
             document.getElementById("alertSound").play();
+
+            // 🔄 Reload only when new data
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         }
 
-        lastCount = currentCount;
-    }, 5000);
+    });
+}, 5000);
 </script>
 
 </body>

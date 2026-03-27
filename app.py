@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, jsonify
 import sqlite3
 import os
 from dotenv import load_dotenv
@@ -9,13 +9,13 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# 🔐 Secret key (login ke liye)
+# 🔐 Secret key
 app.secret_key = "secret123"
 
 # ✅ API KEY
 resend.api_key = os.environ.get("RESEND_API_KEY")
 
-print("🔥 NEW CODE LOADED")   # ✅ DEBUG LINE
+print("🔥 NEW CODE LOADED")
 
 # -------- DATABASE --------
 def init_db():
@@ -70,6 +70,18 @@ def send_email(data):
 @app.route('/test')
 def test():
     return "✅ NEW CODE WORKING"
+
+
+# -------- 🔔 CHECK ROUTE (IMPORTANT) --------
+@app.route('/check')
+def check():
+    conn = sqlite3.connect("database.db")
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM complaints")
+    count = c.fetchone()[0]
+    conn.close()
+
+    return jsonify({"count": count})
 
 
 # -------- LANDING --------
