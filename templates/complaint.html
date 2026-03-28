@@ -1,22 +1,103 @@
-<link rel="stylesheet" href="/static/style.css">
-
-<div class="navbar">Submit Complaint</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sahara Portal</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
 
 <div class="container">
-<div class="card">
+
+    <h1>Sahara Portal</h1>
+    <p class="subtitle">Welfare & grievance redressal platform for unit families</p>
+
+    <div class="notice">
+        All submissions can be made anonymously and will be handled with strict confidentiality.
+    </div>
+
+    <div class="card">
 
 <form action="/submit" method="POST">
+
+    <!-- BASIC DETAILS -->
+    <h2>Basic Details</h2>
+
     <input name="name" placeholder="Name" required>
     <input name="address" placeholder="Address">
-    <input name="contact" placeholder="Contact">
+    <input name="contact" placeholder="Contact Number">
     <input name="email" placeholder="Email">
     <input name="unit" placeholder="Unit">
     <input name="wo" placeholder="WO">
     <input name="quarter" placeholder="Quarter">
-    <textarea name="complaint" placeholder="Your Complaint"></textarea>
 
-    <button type="submit">Submit</button>
+    <!-- CATEGORY -->
+    <h2>Select Category</h2>
+
+    <input type="hidden" name="category" id="category">
+
+    <div class="grid">
+        <div class="box" onclick="selectCategory(this, 'Ration')">🍽️<p>Ration</p></div>
+        <div class="box" onclick="selectCategory(this, 'Accommodation')">🏠<p>Accommodation</p></div>
+        <div class="box" onclick="selectCategory(this, 'Welfare')">👨‍👩‍👧<p>Welfare</p></div>
+        <div class="box" onclick="selectCategory(this, 'Safety')">🛡️<p>Safety</p></div>
+    </div>
+
+    <!-- DESCRIPTION -->
+    <h2>Describe Your Concern</h2>
+
+    <textarea name="complaint" placeholder="Write your issue here..."></textarea>
+
+    <!-- AUDIO -->
+    <div class="audio-controls">
+        <button type="button" class="record" onclick="startRecording()">🎤 Record</button>
+        <button type="button" class="stop" onclick="stopRecording()">⏹ Stop</button>
+    </div>
+
+    <audio id="audioPlayback" controls></audio>
+
+    <!-- BUTTONS -->
+    <button type="button" class="emergency">🚨 Emergency</button>
+    <button type="submit" class="submit">Submit</button>
+
 </form>
 
+    </div>
 </div>
-</div>
+
+<script>
+function selectCategory(element, category) {
+    document.querySelectorAll(".box").forEach(box => box.style.background = "white");
+    element.style.background = "#cde5d7";
+    document.getElementById("category").value = category;
+}
+
+// AUDIO RECORD
+let mediaRecorder;
+let audioChunks = [];
+
+async function startRecording() {
+    let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.start();
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = e => {
+        audioChunks.push(e.data);
+    };
+}
+
+function stopRecording() {
+    mediaRecorder.stop();
+
+    mediaRecorder.onstop = () => {
+        let audioBlob = new Blob(audioChunks);
+        let audioUrl = URL.createObjectURL(audioBlob);
+        document.getElementById("audioPlayback").src = audioUrl;
+    };
+}
+</script>
+
+</body>
+</html>

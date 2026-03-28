@@ -4,6 +4,7 @@ body {
     margin: 0;
 }
 
+/* NAVBAR */
 .navbar {
     background: #0b3d91;
     color: white;
@@ -12,27 +13,145 @@ body {
     font-weight: bold;
 }
 
+/* MAIN CONTAINER */
 .container {
-    width: 80%;
+    width: 70%;
     margin: auto;
     margin-top: 30px;
 }
 
+/* CARD */
 .card {
     background: white;
     padding: 25px;
-    border-radius: 10px;
+    border-radius: 12px;
     box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
 }
 
+/* INPUTS */
 input, textarea {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     margin-top: 10px;
-    border-radius: 6px;
+    border-radius: 8px;
     border: 1px solid #ccc;
+    font-size: 14px;
 }
 
+textarea {
+    height: 100px;
+}
+
+/* HEADINGS */
+h1 {
+    text-align: center;
+    color: #0b3d91;
+}
+
+.subtitle {
+    text-align: center;
+    color: #555;
+    margin-bottom: 10px;
+}
+
+h2 {
+    margin-bottom: 10px;
+}
+
+/* NOTICE BOX */
+.notice {
+    background: #eaf1ff;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* CATEGORY GRID */
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+/* CATEGORY BOX */
+.box {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s;
+    font-size: 16px;
+    border: 1px solid #ddd;
+}
+
+.box:hover {
+    background: #e6edff;
+    transform: scale(1.03);
+}
+
+/* AUDIO BUTTONS */
+.audio-controls {
+    margin-top: 10px;
+}
+
+.record {
+    background: green;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: none;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.stop {
+    background: red;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+/* EMERGENCY BUTTON */
+.emergency {
+    width: 100%;
+    background: #d9534f;
+    color: white;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    margin-top: 15px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.emergency:hover {
+    background: #b52b27;
+}
+
+/* SUBMIT BUTTON */
+.submit {
+    width: 100%;
+    background: #0b3d91;
+    color: white;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    margin-top: 10px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.submit:hover {
+    background: #062a66;
+}
+
+/* GENERAL BUTTON FIX (existing buttons) */
 button {
     background: #0b3d91;
     color: white;
@@ -45,8 +164,4 @@ button {
 
 button:hover {
     background: #062a66;
-}
-
-h2 {
-    margin-bottom: 10px;
 }
