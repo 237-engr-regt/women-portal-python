@@ -19,6 +19,7 @@
     <th>Complaint</th>
     <th>Category</th>
     <th>Subcategory</th>
+    <th>Audio</th> <!-- 🎧 NEW -->
     <th>Reply</th>
 </tr>
 
@@ -30,14 +31,24 @@
     <td>{{row[10]}}</td> <!-- category -->
     <td>{{row[11]}}</td> <!-- subcategory -->
 
+    <!-- 🎧 AUDIO COLUMN -->
     <td>
-        <!-- Reply input -->
+        {% if row[13] %}
+            <audio controls style="width:150px;">
+                <source src="{{row[13]}}" type="audio/webm">
+                Your browser does not support audio
+            </audio>
+        {% else %}
+            No Audio
+        {% endif %}
+    </td>
+
+    <!-- 💬 REPLY -->
+    <td>
         <input id="reply_{{row[1]}}" placeholder="Type reply">
 
-        <!-- Send button -->
         <button onclick="sendReply('{{row[1]}}')">Send</button>
 
-        <!-- Show saved reply -->
         <p style="color:green;">{{row[12]}}</p>
     </td>
 </tr>
@@ -53,7 +64,7 @@
 
 <script>
 
-// 🔥 SEND REPLY (NO PAGE REDIRECT)
+// 💬 SEND REPLY
 function sendReply(id){
     let reply = document.getElementById("reply_" + id).value;
 
@@ -80,8 +91,7 @@ function sendReply(id){
     });
 }
 
-
-// 🔊 AUTO NEW COMPLAINT ALERT
+// 🔔 AUTO NEW COMPLAINT ALERT
 let lastCount = {{ data|length }};
 
 setInterval(() => {

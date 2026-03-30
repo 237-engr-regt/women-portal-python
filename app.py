@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 import resend
 import random
+import base64
 
 load_dotenv()
 
@@ -12,18 +13,21 @@ app.secret_key = "secret123"
 
 resend.api_key = os.environ.get("RESEND_API_KEY")
 
-print("🔥 FINAL ULTRA FIXED CODE RUNNING")
+print("🔥 FINAL ULTRA PRO CODE RUNNING")
 
-# ✅ DB PATH
+# ✅ PATHS
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "database.db")
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "static/audio")
+
+# ensure folder exists
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # -------- DATABASE --------
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    # ✅ CREATE TABLE
     c.execute('''
         CREATE TABLE IF NOT EXISTS complaints (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,22 +40,12 @@ def init_db():
             wo TEXT,
             quarter TEXT,
             complaint TEXT,
-            reply TEXT
+            category TEXT,
+            subcategory TEXT,
+            reply TEXT,
+            audio TEXT
         )
     ''')
-
-    # 🔥 CHECK EXISTING COLUMNS
-    c.execute("PRAGMA table_info(complaints)")
-    columns = [col[1] for col in c.fetchall()]
-
-    # ✅ ADD CATEGORY COLUMN IF MISSING
-    if "category" not in columns:
-        c.execute("ALTER TABLE complaints ADD COLUMN category TEXT")
-        print("✅ category column added")
-
-    if "subcategory" not in columns:
-        c.execute("ALTER TABLE complaints ADD COLUMN subcategory TEXT")
-        print("✅ subcategory column added")
 
     conn.commit()
     conn.close()
@@ -59,8 +53,15 @@ def init_db():
 init_db()
 
 # -------- EMAIL --------
-def send_email(data):
+def send_email(data, audio_link=None):
     try:
+        audio_html = ""
+        if audio_link:
+            audio_html = f"""
+            <p><b>Audio:</b></p>
+            <a href="{audio_link}">Listen Audio</a>
+            """
+
         resend.Emails.send({
             "from": "onboarding@resend.dev",
             "to": ["masountajinder@gmail.com"],
@@ -74,8 +75,10 @@ def send_email(data):
                 <p><b>Category:</b> {data[8]}</p>
                 <p><b>Subcategory:</b> {data[9]}</p>
                 <p><b>Complaint:</b><br>{data[10]}</p>
+                {audio_html}
             """
         })
+
         print("✅ Email sent")
 
     except Exception as e:
@@ -107,16 +110,39 @@ def complaint():
             subcategory = request.form.get('subcategory')
             complaint_text = request.form.get('complaint')
 
+            # 🎤 AUDIO HANDLE
+            audio_data = request.form.get("audio")
+            audio_path = ""
+
+            if audio_data:
+                try:
+                    header, encoded = audio_data.split(",", 1)
+                    file_data = base64.b64decode(encoded)
+
+                    filename = f"{complaint_id}.webm"
+                    filepath = os.path.join(UPLOAD_FOLDER, filename)
+
+                    with open(filepath, "wb") as f:
+                        f.write(file_data)
+
+                    audio_path = f"/static/audio/{filename}"
+
+                    print("✅ Audio saved:", audio_path)
+
+                except Exception as e:
+                    print("❌ Audio error:", str(e))
+
             conn = sqlite3.connect(DB_PATH)
             c = conn.cursor()
 
             c.execute("""
                 INSERT INTO complaints 
-                (complaint_id, name, address, contact, email, unit, wo, quarter, complaint, category, subcategory, reply)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (complaint_id, name, address, contact, email, unit, wo, quarter, complaint, category, subcategory, reply, audio)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 complaint_id, name, address, contact, email,
-                unit, wo, quarter, complaint_text, category, subcategory, ""
+                unit, wo, quarter, complaint_text,
+                category, subcategory, "", audio_path
             ))
 
             conn.commit()
@@ -124,10 +150,11 @@ def complaint():
 
             print("✅ SAVED IN DATABASE")
 
+            # 📧 EMAIL
             send_email((
                 complaint_id, name, address, contact, email,
                 unit, wo, quarter, category, subcategory, complaint_text
-            ))
+            ), audio_path)
 
             return jsonify({
                 "status": "success",
@@ -158,6 +185,17 @@ def admin():
     return render_template("admin.html", data=data)
 
 
+@app.route('/check')
+def check():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT COUNT(*) FROM complaints")
+    count = c.fetchone()[0]
+    conn.close()
+
+    return jsonify({"count": count})
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -174,7 +212,6 @@ def logout():
     return redirect('/login')
 
 
-# 🔥 REPLY API
 @app.route('/reply/<cid>', methods=['POST'])
 def reply(cid):
     if not session.get('admin'):
