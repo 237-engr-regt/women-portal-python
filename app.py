@@ -23,6 +23,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
+    # ✅ CREATE TABLE
     c.execute('''
         CREATE TABLE IF NOT EXISTS complaints (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,11 +36,22 @@ def init_db():
             wo TEXT,
             quarter TEXT,
             complaint TEXT,
-            category TEXT,
-            subcategory TEXT,
             reply TEXT
         )
     ''')
+
+    # 🔥 CHECK EXISTING COLUMNS
+    c.execute("PRAGMA table_info(complaints)")
+    columns = [col[1] for col in c.fetchall()]
+
+    # ✅ ADD CATEGORY COLUMN IF MISSING
+    if "category" not in columns:
+        c.execute("ALTER TABLE complaints ADD COLUMN category TEXT")
+        print("✅ category column added")
+
+    if "subcategory" not in columns:
+        c.execute("ALTER TABLE complaints ADD COLUMN subcategory TEXT")
+        print("✅ subcategory column added")
 
     conn.commit()
     conn.close()
@@ -162,7 +174,7 @@ def logout():
     return redirect('/login')
 
 
-# 🔥 FIXED REPLY API (JSON RETURN)
+# 🔥 REPLY API
 @app.route('/reply/<cid>', methods=['POST'])
 def reply(cid):
     if not session.get('admin'):
