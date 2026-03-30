@@ -15,6 +15,10 @@ resend.api_key = os.environ.get("RESEND_API_KEY")
 
 print("🔥 FINAL ULTRA PRO CODE RUNNING")
 
+# ✅ ADMIN CREDENTIALS FROM ENV
+ADMIN_USER = os.getenv("ADMIN_USER", "admin")
+ADMIN_PASS = os.getenv("ADMIN_PASS", "1234")
+
 # ✅ PATHS
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "database.db")
@@ -207,14 +211,19 @@ def check():
     return jsonify({"count": count})
 
 
-# ✅ LOGIN
+# ✅ 🔐 SECURE LOGIN
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        if request.form.get('username') == "admin" and request.form.get('password') == "1234":
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        if username == ADMIN_USER and password == ADMIN_PASS:
             session['admin'] = True
             return redirect('/admin')
+
         return "❌ Wrong Username or Password"
+
     return render_template("login.html")
 
 
@@ -248,7 +257,7 @@ def reply(cid):
         return jsonify({"status": "error", "message": str(e)})
 
 
-# ✅ 🗑️ DELETE (NEW FEATURE)
+# ✅ DELETE
 @app.route('/delete/<cid>', methods=['POST'])
 def delete(cid):
     if not session.get('admin'):
