@@ -8,8 +8,14 @@ import base64
 
 load_dotenv()
 
-app = Flask(__name__)
+# ✅ FIXED STATIC CONFIG
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = "secret123"
+
+# ✅ FORCE STATIC SERVE (IMPORTANT FOR RENDER)
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return app.send_static_file(filename)
 
 resend.api_key = os.environ.get("RESEND_API_KEY")
 
@@ -211,7 +217,7 @@ def check():
     return jsonify({"count": count})
 
 
-# ✅ 🔐 SECURE LOGIN
+# ✅ LOGIN
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
