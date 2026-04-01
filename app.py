@@ -8,7 +8,7 @@ import base64
 
 load_dotenv()
 
-# ✅ FIXED STATIC CONFIG
+# ✅ STATIC CONFIG
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = "secret123"
 
@@ -21,9 +21,9 @@ resend.api_key = os.environ.get("RESEND_API_KEY")
 
 print("🔥 FINAL ULTRA PRO CODE RUNNING")
 
-# ✅ ADMIN CREDENTIALS FROM ENV
-ADMIN_USER = os.getenv("ADMIN_USER", "admin")
-ADMIN_PASS = os.getenv("ADMIN_PASS", "1234")
+# ✅ ADMIN LOGIN (FIXED)
+ADMIN_USER = "admin"
+ADMIN_PASS = "1234"
 
 # ✅ PATHS
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -217,12 +217,12 @@ def check():
     return jsonify({"count": count})
 
 
-# ✅ LOGIN
+# ✅ LOGIN (FINAL FIXED)
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('admin')
-        password = request.form.get('1234')
+        username = request.form.get('username')
+        password = request.form.get('password')
 
         if username == ADMIN_USER and password == ADMIN_PASS:
             session['admin'] = True
