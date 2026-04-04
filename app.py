@@ -16,7 +16,6 @@ resend.api_key = os.environ.get("RESEND_API_KEY")
 
 print("🔥 FINAL ULTRA PRO CODE RUNNING")
 
-# 🔐 ADMIN LOGIN
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
 
@@ -88,14 +87,13 @@ def send_email(data, audio_link=None):
     except Exception as e:
         print("❌ Email error:", str(e))
 
-
 # -------- ROUTES --------
 
 @app.route('/')
 def landing():
     return render_template("landing.html")
 
-
+# -------- SUBMIT --------
 @app.route('/complaint', methods=['GET', 'POST'])
 def complaint():
     if request.method == 'POST':
@@ -156,6 +154,22 @@ def complaint():
 
     return render_template("complaint.html")
 
+# -------- ✅ TRACK SYSTEM (ADDED) --------
+@app.route('/track', methods=["GET", "POST"])
+def track():
+    if request.method == "POST":
+        cid = request.form.get("complaint_id")
+
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        c.execute("SELECT * FROM complaints WHERE complaint_id=?", (cid,))
+        data = c.fetchone()
+        conn.close()
+
+        return render_template("track.html", data=data)
+
+    return render_template("track.html")
 
 # -------- ADMIN LOGIN --------
 @app.route('/admin', methods=['GET', 'POST'])
@@ -170,8 +184,7 @@ def admin_login():
         else:
             return "❌ Wrong Credentials"
 
-    return render_template("admin_login.html")
-
+    return render_template("login.html")   # 🔥 FIX FIX FIX
 
 # -------- DASHBOARD --------
 @app.route('/dashboard')
@@ -187,8 +200,7 @@ def dashboard():
 
     return render_template("admin.html", data=data)
 
-
-# -------- REPLY SYSTEM --------
+# -------- REPLY --------
 @app.route("/reply/<cid>", methods=["POST"])
 def reply(cid):
     if not session.get('admin'):
@@ -205,8 +217,7 @@ def reply(cid):
 
     return jsonify({"status": "success"})
 
-
-# -------- DELETE SYSTEM --------
+# -------- DELETE --------
 @app.route("/delete/<cid>", methods=["POST"])
 def delete(cid):
     if not session.get('admin'):
@@ -221,27 +232,11 @@ def delete(cid):
 
     return jsonify({"status": "success"})
 
-
-# -------- LIVE CHECK --------
-@app.route("/check")
-def check():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT COUNT(*) FROM complaints")
-    count = cursor.fetchone()[0]
-
-    conn.close()
-
-    return jsonify({"count": count})
-
-
 # -------- LOGOUT --------
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect("/admin")
-
 
 # -------- DOWNLOAD EXCEL --------
 @app.route("/download-excel")
@@ -279,7 +274,6 @@ def download_excel():
     wb.save(file_path)
 
     return send_file(file_path, as_attachment=True)
-
 
 # -------- RUN --------
 if __name__ == "__main__":
