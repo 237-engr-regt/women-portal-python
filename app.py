@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file, redirect, session
+from flask import Flask, render_template, request, jsonify, send_file, redirect, session, send_from_directory
 import sqlite3
 import os
 from dotenv import load_dotenv
@@ -16,13 +16,15 @@ resend.api_key = os.environ.get("RESEND_API_KEY")
 
 print("🔥 FINAL ULTRA PRO CODE RUNNING")
 
+# 🔐 ADMIN LOGIN
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "database.db")
-UPLOAD_FOLDER = os.path.join(BASE_DIR, "static/audio")
 
+# 🔥 AUDIO FOLDER (NEW)
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "audio_files")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # -------- DATABASE --------
@@ -54,13 +56,18 @@ def init_db():
 
 init_db()
 
+# -------- AUDIO ROUTE (🔥 MAIN FIX) --------
+@app.route('/audio/<filename>')
+def get_audio(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
 # -------- EMAIL --------
 def send_email(data, audio_link=None):
     try:
         audio_html = ""
 
         if audio_link:
-            full_url = f"https://women-portal.onrender.com{audio_link}"
+            full_url = request.host_url + audio_link
 
             audio_html = f'''
             <p><b>🎧 Audio:</b>
@@ -87,8 +94,7 @@ def send_email(data, audio_link=None):
     except Exception as e:
         print("❌ Email error:", str(e))
 
-# -------- ROUTES --------
-
+# -------- HOME --------
 @app.route('/')
 def landing():
     return render_template("landing.html")
@@ -124,7 +130,7 @@ def complaint():
                 with open(filepath, "wb") as f:
                     f.write(file_data)
 
-                audio_path = f"/static/audio/{filename}"
+                audio_path = f"/audio/{filename}"
 
             conn = sqlite3.connect(DB_PATH)
             c = conn.cursor()
@@ -154,7 +160,7 @@ def complaint():
 
     return render_template("complaint.html")
 
-# -------- ✅ TRACK SYSTEM (ADDED) --------
+# -------- TRACK --------
 @app.route('/track', methods=["GET", "POST"])
 def track():
     if request.method == "POST":
@@ -184,7 +190,7 @@ def admin_login():
         else:
             return "❌ Wrong Credentials"
 
-    return render_template("login.html")   # 🔥 FIX FIX FIX
+    return render_template("login.html")
 
 # -------- DASHBOARD --------
 @app.route('/dashboard')
