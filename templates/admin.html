@@ -10,7 +10,22 @@
 <div class="navbar">Admin Panel</div>
 
 <div class="container">
+
 <div class="card">
+
+<!-- 🔥 TOP ACTION BAR -->
+<div style="margin-bottom:15px; display:flex; justify-content:space-between;">
+
+    <h3>All Complaints</h3>
+
+    <!-- ✅ EXCEL DOWNLOAD BUTTON -->
+    <a href="/download-excel">
+        <button style="padding:10px 15px; background:green; color:white; border:none;">
+            📥 Download Excel
+        </button>
+    </a>
+
+</div>
 
 <table border="1" width="100%" cellpadding="10">
 <tr>
@@ -21,7 +36,7 @@
     <th>Subcategory</th>
     <th>Audio</th>
     <th>Reply</th>
-    <th>Action</th> <!-- 🆕 DELETE COLUMN -->
+    <th>Action</th>
 </tr>
 
 {% for row in data %}
@@ -39,17 +54,22 @@
                 <source src="{{row[13]}}" type="audio/webm">
             </audio>
         {% else %}
-            No Audio
+            <span style="color:gray;">No Audio</span>
         {% endif %}
     </td>
 
     <!-- 💬 REPLY -->
     <td>
-        <input id="reply_{{row[1]}}" placeholder="Type reply">
+        <input id="reply_{{row[1]}}" placeholder="Type reply" style="width:120px;">
 
-        <button onclick="sendReply('{{row[1]}}')">Send</button>
+        <button onclick="sendReply('{{row[1]}}')" 
+        style="background:blue;color:white;">
+            Send
+        </button>
 
-        <p style="color:green;">{{row[12]}}</p>
+        <p style="color:green; margin-top:5px;">
+            {{row[12]}}
+        </p>
     </td>
 
     <!-- 🗑️ DELETE -->
@@ -113,7 +133,7 @@ function deleteComplaint(id){
     .then(data => {
         if(data.status === "success"){
             
-            // 🔥 bina reload ke row remove
+            // 🔥 row remove without reload
             document.getElementById("row_" + id).remove();
 
         } else {
@@ -123,7 +143,7 @@ function deleteComplaint(id){
 }
 
 
-// 🔔 AUTO ALERT
+// 🔔 AUTO ALERT SYSTEM
 let lastCount = {{ data|length }};
 
 setInterval(() => {

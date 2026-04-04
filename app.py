@@ -5,14 +5,13 @@ from dotenv import load_dotenv
 import resend
 import random
 import base64
+from openpyxl import Workbook, load_workbook
 
 load_dotenv()
 
-# ✅ STATIC CONFIG
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = "secret123"
 
-# ✅ FORCE STATIC SERVE
 @app.route('/static/<path:filename>')
 def serve_static(filename):
     return app.send_static_file(filename)
@@ -21,11 +20,9 @@ resend.api_key = os.environ.get("RESEND_API_KEY")
 
 print("🔥 FINAL ULTRA PRO CODE RUNNING")
 
-# ✅ ADMIN LOGIN
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
 
-# ✅ PATHS
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "database.db")
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "static/audio")
@@ -61,28 +58,63 @@ def init_db():
 
 init_db()
 
-# -------- EMAIL (UPDATED WITH ATTACHMENT) --------
+# -------- EXCEL FUNCTION (FIXED) --------
+def save_to_excel(data):
+    print("🔥 Excel function called")
+
+    file_path = os.path.join(BASE_DIR, "complaints.xlsx")  # ✅ FIXED
+
+    if not os.path.exists(file_path):
+        wb = Workbook()
+        ws = wb.active
+
+        ws.append([
+            "Complaint ID", "Name", "Address", "Contact", "Email",
+            "Unit", "WO", "Quarter", "Category", "Subcategory",
+            "Complaint", "Audio"
+        ])
+
+        wb.save(file_path)
+
+    wb = load_workbook(file_path)
+    ws = wb.active
+
+    ws.append(data)
+
+    wb.save(file_path)
+
+    print("✅ Saved to Excel:", file_path)
+
+# -------- EMAIL --------
 def send_email(data, audio_link=None):
     try:
         attachments = []
         audio_html = ""
 
         if audio_link:
-            audio_html = f'<p><b>Audio:</b> <a href="{audio_link}">Listen</a></p>'
+            full_url = f"http://localhost:10000{audio_link}"
+
+            audio_html = f'''
+            <p><b>🎧 Audio Recording:</b><br>
+            <a href="{full_url}" target="_blank">Click to listen</a></p>
+            '''
 
             try:
-                # Convert URL path → actual file path
-                file_path = audio_link.replace("/static/", "static/")
+                file_path = os.path.join(BASE_DIR, audio_link.lstrip("/"))
 
-                with open(file_path, "rb") as f:
-                    file_content = f.read()
+                if os.path.exists(file_path):
+                    with open(file_path, "rb") as f:
+                        file_content = f.read()
 
-                    attachments.append({
-                        "filename": os.path.basename(file_path),
-                        "content": base64.b64encode(file_content).decode("utf-8")
-                    })
+                        attachments.append({
+                            "filename": os.path.basename(file_path),
+                            "content": base64.b64encode(file_content).decode("utf-8"),
+                            "type": "audio/webm"
+                        })
 
-                print("✅ Audio attached")
+                    print("✅ Audio attached")
+                else:
+                    print("❌ File not found:", file_path)
 
             except Exception as e:
                 print("❌ Audio attach error:", str(e))
@@ -102,10 +134,10 @@ def send_email(data, audio_link=None):
                 <p><b>Complaint:</b><br>{data[10]}</p>
                 {audio_html}
             """,
-            "attachments": attachments   # 🔥 AUDIO ATTACH HERE
+            "attachments": attachments
         })
 
-        print("✅ Email + Audio Attachment Sent")
+        print("✅ Email Sent")
 
     except Exception as e:
         print("❌ Email error:", str(e))
@@ -135,7 +167,6 @@ def complaint():
             subcategory = request.form.get('subcategory')
             complaint_text = request.form.get('complaint')
 
-            # 🎤 AUDIO SAVE
             audio_data = request.form.get("audio")
             audio_path = ""
 
@@ -151,6 +182,7 @@ def complaint():
                         f.write(file_data)
 
                     audio_path = f"/static/audio/{filename}"
+                    print("✅ Audio saved:", audio_path)
 
                 except Exception as e:
                     print("❌ Audio error:", str(e))
@@ -171,131 +203,25 @@ def complaint():
             conn.commit()
             conn.close()
 
-            # 📧 SEND EMAIL WITH AUDIO
+            # ✅ EXCEL SAVE
+            save_to_excel((
+                complaint_id, name, address, contact, email,
+                unit, wo, quarter, category, subcategory,
+                complaint_text, audio_path
+            ))
+
+            # 📧 EMAIL
             send_email((
                 complaint_id, name, address, contact, email,
                 unit, wo, quarter, category, subcategory, complaint_text
             ), audio_path)
 
-            return jsonify({
-                "status": "success",
-                "id": complaint_id
-            })
+            return jsonify({"status": "success", "id": complaint_id})
 
         except Exception as e:
-            return jsonify({
-                "status": "error",
-                "message": str(e)
-            })
+            return jsonify({"status": "error", "message": str(e)})
 
     return render_template("complaint.html")
-
-
-@app.route('/track', methods=['GET', 'POST'])
-def track():
-    data = None
-
-    if request.method == 'POST':
-        cid = request.form.get('complaint_id')
-
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-
-        c.execute("SELECT * FROM complaints WHERE complaint_id=?", (cid,))
-        data = c.fetchone()
-
-        conn.close()
-
-    return render_template("track.html", data=data)
-
-
-@app.route('/admin')
-def admin():
-    if not session.get('admin'):
-        return redirect('/login')
-
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT * FROM complaints ORDER BY id DESC")
-    data = c.fetchall()
-    conn.close()
-
-    return render_template("admin.html", data=data)
-
-
-@app.route('/check')
-def check():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM complaints")
-    count = c.fetchone()[0]
-    conn.close()
-
-    return jsonify({"count": count})
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-
-        if username == ADMIN_USER and password == ADMIN_PASS:
-            session['admin'] = True
-            return redirect('/admin')
-
-        return "❌ Wrong Username or Password"
-
-    return render_template("login.html")
-
-
-@app.route('/logout')
-def logout():
-    session.pop('admin', None)
-    return redirect('/login')
-
-
-@app.route('/reply/<cid>', methods=['POST'])
-def reply(cid):
-    if not session.get('admin'):
-        return jsonify({"status": "error", "message": "Unauthorized"})
-
-    reply_text = request.form.get('reply')
-
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-
-        c.execute("UPDATE complaints SET reply=? WHERE complaint_id=?",
-                  (reply_text, cid))
-
-        conn.commit()
-        conn.close()
-
-        return jsonify({"status": "success"})
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-
-@app.route('/delete/<cid>', methods=['POST'])
-def delete(cid):
-    if not session.get('admin'):
-        return jsonify({"status": "error", "message": "Unauthorized"})
-
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-
-        c.execute("DELETE FROM complaints WHERE complaint_id=?", (cid,))
-
-        conn.commit()
-        conn.close()
-
-        return jsonify({"status": "success"})
-
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
 
 
 # -------- RUN --------
