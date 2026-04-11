@@ -13,7 +13,7 @@ load_dotenv()
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = "secret123"
 
-print("🔥 FINAL EMAIL NOTIFICATION VERSION RUNNING")
+print("🔥 FINAL EMAIL + TRACK VERSION RUNNING")
 
 # 🔐 ADMIN LOGIN
 ADMIN_USER = "admin"
@@ -71,12 +71,8 @@ def send_email(data, audio_link=None):
     try:
         print("📤 SENDING EMAIL...")
 
-        if not RESEND_API_KEY:
-            print("❌ NO API KEY FOUND")
-            return
-
-        if not ADMIN_EMAIL:
-            print("❌ NO ADMIN EMAIL FOUND")
+        if not RESEND_API_KEY or not ADMIN_EMAIL:
+            print("❌ EMAIL CONFIG MISSING")
             return
 
         complaint_id, name, address, contact, email, unit, wo, quarter, category, subcategory, complaint_text = data
@@ -88,7 +84,6 @@ def send_email(data, audio_link=None):
 👤 Name: {name}
 📞 Contact: {contact}
 📧 Email: {email}
-🏠 Address: {address}
 
 📂 Category: {category}
 📌 Subcategory: {subcategory}
@@ -114,11 +109,9 @@ def send_email(data, audio_link=None):
         )
 
         print("📧 STATUS:", res.status_code)
-        print("📧 RESPONSE:", res.text)
 
     except Exception as e:
         print("❌ EMAIL ERROR:", str(e))
-
 
 # -------- HOME --------
 @app.route('/')
@@ -168,13 +161,13 @@ def complaint():
             """, (
                 complaint_id, name, address, contact, email,
                 unit, wo, quarter, complaint_text,
-                category, subcategory, "", audio_path
+                category, subcategory, "Pending", audio_path
             ))
 
             conn.commit()
             conn.close()
 
-            # 🔥 EMAIL THREAD
+            # EMAIL THREAD
             t = threading.Thread(
                 target=send_email,
                 args=((complaint_id, name, address, contact, email,
@@ -190,6 +183,27 @@ def complaint():
             return jsonify({"status": "error", "message": str(e)})
 
     return render_template("complaint.html")
+
+# -------- TRACK COMPLAINT --------
+@app.route('/track', methods=['GET', 'POST'])
+def track():
+    if request.method == 'POST':
+        complaint_id = request.form.get('complaint_id')
+
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        c.execute("SELECT * FROM complaints WHERE complaint_id = ?", (complaint_id,))
+        data = c.fetchone()
+
+        conn.close()
+
+        if data:
+            return render_template("track.html", data=data)
+        else:
+            return render_template("track.html", error="❌ Complaint not found")
+
+    return render_template("track.html")
 
 # -------- ADMIN --------
 @app.route('/admin', methods=['GET', 'POST'])
