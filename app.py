@@ -2,26 +2,28 @@ from flask import Flask, render_template, request, jsonify, send_file, redirect,
 import sqlite3
 import os
 from dotenv import load_dotenv
-import resend
 import random
 import base64
 from openpyxl import Workbook
+import smtplib
+from email.mime.text import MIMEText
+import threading   # ✅ NEW
 
 load_dotenv()
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = "secret123"
 
-resend.api_key = os.environ.get("RESEND_API_KEY")
-
-# ✅ NEW: Admin Email from ENV (fallback bhi diya hai)
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "237engrregt@gmail.com")
-
-print("🔥 FINAL ULTRA PRO CODE RUNNING")
+print("🔥 FINAL ULTRA PRO CODE RUNNING (ADMIN EMAIL FIXED)")
 
 # 🔐 ADMIN LOGIN
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
+
+# ✅ EMAIL CONFIG
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "237engrregt@gmail.com")
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "tzcnhyiajurp")
+ADMIN_EMAIL = "237engrregt@gmail.com"   # ✅ ADMIN EMAIL
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "database.db")
@@ -64,38 +66,39 @@ init_db()
 def get_audio(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
-# -------- EMAIL --------
+# -------- EMAIL FUNCTION --------
 def send_email(data, audio_link=None):
     try:
-        audio_html = ""
+        print("📤 Sending email to admin...")
+
+        body = f"""
+🚨 New Complaint Received
+
+ID: {data[0]}
+Name: {data[1]}
+Contact: {data[3]}
+Category: {data[8]}
+Complaint: {data[10]}
+"""
 
         if audio_link:
-            full_url = request.host_url + audio_link
+            body += f"\nAudio: https://your-render-url.onrender.com{audio_link}"
 
-            audio_html = f'''
-            <p><b>🎧 Audio:</b>
-            <a href="{full_url}">Listen</a></p>
-            '''
+        msg = MIMEText(body)
+        msg["Subject"] = f"🚨 Complaint {data[0]}"
+        msg["From"] = SENDER_EMAIL
+        msg["To"] = ADMIN_EMAIL   # ✅ ADMIN KO JAAYEGA
 
-        resend.Emails.send({
-            "from": "onboarding@resend.dev",
-            "to": [ADMIN_EMAIL],   # ✅ yahan change kiya (dynamic)
-            "subject": f"🚨 Complaint {data[0]}",
-            "html": f"""
-                <h2>New Complaint</h2>
-                <p><b>ID:</b> {data[0]}</p>
-                <p><b>Name:</b> {data[1]}</p>
-                <p><b>Contact:</b> {data[3]}</p>
-                <p><b>Category:</b> {data[8]}</p>
-                <p><b>Complaint:</b><br>{data[10]}</p>
-                {audio_html}
-            """
-        })
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+        server.starttls()
+        server.login(SENDER_EMAIL, APP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
 
-        print("✅ Email Sent to:", ADMIN_EMAIL)
+        print("✅ Email Sent to Admin")
 
     except Exception as e:
-        print("❌ Email error:", str(e))
+        print("❌ Email Error:", str(e))
 
 # -------- HOME --------
 @app.route('/')
@@ -120,7 +123,8 @@ def complaint():
             subcategory = request.form.get('subcategory')
             complaint_text = request.form.get('complaint')
 
-            audio_data = request.form.get("audio")
+            # ✅ AUDIO FIX
+            audio_data = request.form.get("audio_data")
             audio_path = ""
 
             if audio_data:
@@ -151,14 +155,19 @@ def complaint():
             conn.commit()
             conn.close()
 
-            send_email((
-                complaint_id, name, address, contact, email,
-                unit, wo, quarter, category, subcategory, complaint_text
-            ), audio_path)
+            # ✅ BACKGROUND EMAIL (NO CRASH)
+            threading.Thread(
+                target=send_email,
+                args=((
+                    complaint_id, name, address, contact, email,
+                    unit, wo, quarter, category, subcategory, complaint_text
+                ), audio_path)
+            ).start()
 
             return jsonify({"status": "success", "id": complaint_id})
 
         except Exception as e:
+            print("❌ ERROR:", e)
             return jsonify({"status": "error", "message": str(e)})
 
     return render_template("complaint.html")
@@ -171,7 +180,6 @@ def track():
 
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
-
         c.execute("SELECT * FROM complaints WHERE complaint_id=?", (cid,))
         data = c.fetchone()
         conn.close()
@@ -180,7 +188,7 @@ def track():
 
     return render_template("track.html")
 
-# -------- ADMIN LOGIN --------
+# -------- ADMIN --------
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():
     if request.method == "POST":
@@ -195,7 +203,6 @@ def admin_login():
 
     return render_template("login.html")
 
-# -------- DASHBOARD --------
 @app.route('/dashboard')
 def dashboard():
     if not session.get('admin'):
@@ -209,7 +216,6 @@ def dashboard():
 
     return render_template("admin.html", data=data)
 
-# -------- REPLY --------
 @app.route("/reply/<cid>", methods=["POST"])
 def reply(cid):
     if not session.get('admin'):
@@ -219,14 +225,12 @@ def reply(cid):
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-
     cursor.execute("UPDATE complaints SET reply=? WHERE complaint_id=?", (reply_text, cid))
     conn.commit()
     conn.close()
 
     return jsonify({"status": "success"})
 
-# -------- DELETE --------
 @app.route("/delete/<cid>", methods=["POST"])
 def delete(cid):
     if not session.get('admin'):
@@ -234,20 +238,18 @@ def delete(cid):
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-
     cursor.execute("DELETE FROM complaints WHERE complaint_id=?", (cid,))
     conn.commit()
     conn.close()
 
     return jsonify({"status": "success"})
 
-# -------- LOGOUT --------
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect("/admin")
 
-# -------- DOWNLOAD EXCEL --------
+# -------- EXCEL --------
 @app.route("/download-excel")
 def download_excel():
     if not session.get('admin'):
@@ -255,14 +257,12 @@ def download_excel():
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-
     cursor.execute("""
         SELECT complaint_id, name, address, contact, email,
                unit, wo, quarter, category, subcategory,
                complaint, audio
         FROM complaints
     """)
-
     data = cursor.fetchall()
     conn.close()
 
