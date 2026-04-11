@@ -13,13 +13,13 @@ load_dotenv()
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = "secret123"
 
-print("🔥 FINAL RESEND FIX VERSION RUNNING")
+print("🔥 FINAL EMAIL NOTIFICATION VERSION RUNNING")
 
 # 🔐 ADMIN LOGIN
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
 
-# ✅ API CONFIG
+# ✅ RESEND CONFIG
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
 
@@ -72,21 +72,31 @@ def send_email(data, audio_link=None):
         print("📤 SENDING EMAIL...")
 
         if not RESEND_API_KEY:
-            print("❌ NO API KEY")
+            print("❌ NO API KEY FOUND")
             return
 
         if not ADMIN_EMAIL:
-            print("❌ NO ADMIN EMAIL")
+            print("❌ NO ADMIN EMAIL FOUND")
             return
 
-        body = f"""
-🚨 New Complaint
+        complaint_id, name, address, contact, email, unit, wo, quarter, category, subcategory, complaint_text = data
 
-ID: {data[0]}
-Name: {data[1]}
-Contact: {data[3]}
-Category: {data[8]}
-Complaint: {data[10]}
+        body = f"""
+🚨 New Complaint Received
+
+🆔 ID: {complaint_id}
+👤 Name: {name}
+📞 Contact: {contact}
+📧 Email: {email}
+🏠 Address: {address}
+
+📂 Category: {category}
+📌 Subcategory: {subcategory}
+
+📝 Complaint:
+{complaint_text}
+
+🎧 Audio: {audio_link if audio_link else "No audio"}
 """
 
         res = requests.post(
@@ -97,17 +107,18 @@ Complaint: {data[10]}
             },
             json={
                 "from": "onboarding@resend.dev",
-                "to": [ADMIN_EMAIL],   # ✅ FIX
-                "subject": f"Complaint {data[0]}",
+                "to": [ADMIN_EMAIL],
+                "subject": f"🚨 New Complaint: {complaint_id}",
                 "html": f"<pre>{body}</pre>"
             }
         )
 
         print("📧 STATUS:", res.status_code)
-        print("📧 BODY:", res.text)
+        print("📧 RESPONSE:", res.text)
 
     except Exception as e:
-        print("❌ ERROR:", str(e))
+        print("❌ EMAIL ERROR:", str(e))
+
 
 # -------- HOME --------
 @app.route('/')
@@ -163,7 +174,7 @@ def complaint():
             conn.commit()
             conn.close()
 
-            # 🔥 THREAD FIX
+            # 🔥 EMAIL THREAD
             t = threading.Thread(
                 target=send_email,
                 args=((complaint_id, name, address, contact, email,
