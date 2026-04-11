@@ -5,29 +5,26 @@ from dotenv import load_dotenv
 import random
 import base64
 from openpyxl import Workbook
-import smtplib
-from email.mime.text import MIMEText
 import threading
+import requests
 
 load_dotenv()
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = "secret123"
 
-print("🔥 FINAL EMAIL DEBUG VERSION RUNNING")
+print("🔥 FINAL RESEND FIX VERSION RUNNING")
 
 # 🔐 ADMIN LOGIN
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
 
-# ✅ EMAIL CONFIG (NO DEFAULT - MUST COME FROM RENDER)
-SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
-APP_PASSWORD = os.environ.get("APP_PASSWORD")
-ADMIN_EMAIL = "237engrregt@gmail.com"
+# ✅ API CONFIG
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
 
-print("📧 EMAIL CONFIG:")
-print("SENDER_EMAIL =", SENDER_EMAIL)
-print("APP_PASSWORD =", APP_PASSWORD)
+print("📧 KEY:", RESEND_API_KEY)
+print("📧 ADMIN:", ADMIN_EMAIL)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "database.db")
@@ -72,15 +69,18 @@ def get_audio(filename):
 # -------- EMAIL FUNCTION --------
 def send_email(data, audio_link=None):
     try:
-        print("📤 Sending email to admin...")
+        print("📤 SENDING EMAIL...")
 
-        # ❗ CHECK CONFIG
-        if not SENDER_EMAIL or not APP_PASSWORD:
-            print("❌ EMAIL CONFIG MISSING")
+        if not RESEND_API_KEY:
+            print("❌ NO API KEY")
+            return
+
+        if not ADMIN_EMAIL:
+            print("❌ NO ADMIN EMAIL")
             return
 
         body = f"""
-🚨 New Complaint Received
+🚨 New Complaint
 
 ID: {data[0]}
 Name: {data[1]}
@@ -89,22 +89,25 @@ Category: {data[8]}
 Complaint: {data[10]}
 """
 
-        msg = MIMEText(body)
-        msg["Subject"] = f"🚨 Complaint {data[0]}"
-        msg["From"] = SENDER_EMAIL
-        msg["To"] = ADMIN_EMAIL
+        res = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "from": "onboarding@resend.dev",
+                "to": [ADMIN_EMAIL],   # ✅ FIX
+                "subject": f"Complaint {data[0]}",
+                "html": f"<pre>{body}</pre>"
+            }
+        )
 
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.set_debuglevel(1)   # 🔥 IMPORTANT (logs show everything)
-        server.starttls()
-        server.login(SENDER_EMAIL, APP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-
-        print("✅ EMAIL SENT SUCCESSFULLY")
+        print("📧 STATUS:", res.status_code)
+        print("📧 BODY:", res.text)
 
     except Exception as e:
-        print("❌ EMAIL ERROR FULL:", repr(e))
+        print("❌ ERROR:", str(e))
 
 # -------- HOME --------
 @app.route('/')
@@ -160,12 +163,14 @@ def complaint():
             conn.commit()
             conn.close()
 
-            # ✅ EMAIL THREAD
-            threading.Thread(
+            # 🔥 THREAD FIX
+            t = threading.Thread(
                 target=send_email,
                 args=((complaint_id, name, address, contact, email,
                        unit, wo, quarter, category, subcategory, complaint_text), audio_path)
-            ).start()
+            )
+            t.daemon = True
+            t.start()
 
             return jsonify({"status": "success", "id": complaint_id})
 
@@ -175,8 +180,7 @@ def complaint():
 
     return render_template("complaint.html")
 
-# -------- बाकी routes same --------
-
+# -------- ADMIN --------
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():
     if request.method == "POST":
