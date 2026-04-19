@@ -19,7 +19,8 @@
     <h3>All Complaints</h3>
 
     <div>
-        <a href="/download-excel">
+        <!-- ✅ FIXED DOWNLOAD BUTTON -->
+        <a href="/download">
             <button style="padding:10px 15px; background:green; color:white; border:none;">
                 📥 Download Excel
             </button>
@@ -49,11 +50,11 @@
 {% for row in data %}
 <tr id="row_{{row[1]}}">
 
-    <td>{{row[1]}}</td> <!-- complaint_id -->
-    <td>{{row[2]}}</td> <!-- name -->
-    <td>{{row[9]}}</td> <!-- complaint -->
-    <td>{{row[10]}}</td> <!-- category -->
-    <td>{{row[11]}}</td> <!-- subcategory -->
+    <td>{{row[1]}}</td>
+    <td>{{row[2]}}</td>
+    <td>{{row[9]}}</td>
+    <td>{{row[10]}}</td>
+    <td>{{row[11]}}</td>
 
     <!-- 🎧 AUDIO -->
     <td>
@@ -128,7 +129,6 @@ function sendReply(id){
     });
 }
 
-
 // 🗑️ DELETE FUNCTION
 function deleteComplaint(id){
 
@@ -146,7 +146,6 @@ function deleteComplaint(id){
         }
     });
 }
-
 
 // 🔔 AUTO ALERT SYSTEM
 let lastCount = {{ data|length }};

@@ -16,9 +16,11 @@
         All submissions can be made anonymously and will be handled with strict confidentiality.
     </div>
 
-    <audio id="alertSound" src="/static/alert.mp3"></audio>
+    <!-- 🔔 SOUND -->
+    <audio id="alertSound" src="/static/alert.mp3" preload="auto"></audio>
 
-    <form id="complaintForm">
+    <!-- ✅ FIXED FORM -->
+    <form method="POST" action="/complaint">
 
     <!-- BASIC DETAILS -->
     <div class="card">
@@ -57,19 +59,20 @@
 
         <textarea name="complaint" placeholder="Write your issue here..." required></textarea>
 
-        <!-- 🎤 RECORDING -->
         <br>
         <button type="button" onclick="startRecording()">🎤 Record</button>
         <button type="button" onclick="stopRecording()">⏹ Stop</button>
 
         <br><br>
         <audio id="audioPlayback" controls></audio>
+
+        <!-- ✅ FIX (name changed) -->
         <input type="hidden" id="audioData" name="audio_data">
     </div>
 
-    <!-- 🚨 EMERGENCY BUTTON -->
     <button type="button" onclick="openEmergency()" class="emergency">🚨 Emergency</button>
 
+    <!-- ✅ IMPORTANT -->
     <button type="submit" class="submit">Submit</button>
 
     </form>
@@ -77,52 +80,17 @@
 </div>
 
 <!-- 🚨 POPUP -->
-<div id="emergencyPopup" style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,0.7);
-z-index:999;
-">
-
-<div style="
-background:white;
-width:320px;
-margin:120px auto;
-padding:20px;
-border-radius:12px;
-text-align:center;
-">
-
+<div id="emergencyPopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:999;">
+<div style="background:white;width:320px;margin:120px auto;padding:20px;border-radius:12px;text-align:center;">
 <h3>🚨 Emergency Contacts</h3>
 
-<a href="tel:97xxxxxx01">
-    <button style="width:100%; margin:5px; padding:10px;">📞 CO (97xxxxxx01)</button>
-</a>
-
-<a href="tel:96xxxxxx02">
-    <button style="width:100%; margin:5px; padding:10px;">📞 2IC (96xxxxxx02)</button>
-</a>
-
-<a href="tel:95xxxxxx03">
-    <button style="width:100%; margin:5px; padding:10px;">📞 Adjt (95xxxxxx03)</button>
-</a>
-
-<a href="tel:94xxxxxx04">
-    <button style="width:100%; margin:5px; padding:10px;">📞 QM (94xxxxxx04)</button>
-</a>
-
-<br>
 <button onclick="closeEmergency()">❌ Close</button>
-
 </div>
 </div>
 
 <script>
 
+// CATEGORY
 let options = {
     ration: ["Non-availability of ration","Poor quality","Delayed supply","CSD issue"],
     accommodation: ["Water supply","Electricity","Repairs","Sanitation issue"],
@@ -159,88 +127,35 @@ let mediaRecorder;
 let audioChunks = [];
 
 async function startRecording() {
-    try {
-        let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
 
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
 
-        mediaRecorder.ondataavailable = e => {
-            audioChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+        let blob = new Blob(audioChunks, { type: 'audio/webm' });
+        let reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = () => {
+            document.getElementById("audioData").value = reader.result;
         };
+    };
 
-        mediaRecorder.onstop = () => {
-            let blob = new Blob(audioChunks, { type: 'audio/webm' });
-            let url = URL.createObjectURL(blob);
-
-            document.getElementById("audioPlayback").src = url;
-
-            let reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = () => {
-                document.getElementById("audioData").value = reader.result;
-            };
-        };
-
-        mediaRecorder.start();
-        alert("🎤 Recording Started");
-
-    } catch (err) {
-        alert("Mic allow karo ❌");
-    }
+    mediaRecorder.start();
 }
 
 function stopRecording() {
-    if (mediaRecorder) {
-        mediaRecorder.stop();
-        alert("✅ Recording Saved");
-    }
+    if (mediaRecorder) mediaRecorder.stop();
 }
 
 // 🚨 POPUP
 function openEmergency() {
     document.getElementById("emergencyPopup").style.display = "block";
 }
-
 function closeEmergency() {
     document.getElementById("emergencyPopup").style.display = "none";
 }
-
-// SUBMIT
-document.getElementById("complaintForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-
-    let category = document.getElementById("category").value;
-    let subcategory = document.getElementById("subcategory").value;
-
-    if(!category){
-        alert("⚠️ Please select a category");
-        return;
-    }
-
-    if(!subcategory){
-        alert("⚠️ Please select a subcategory");
-        return;
-    }
-
-    let formData = new FormData(this);
-
-    fetch("/complaint", {
-        method: "POST",
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.status === "success"){
-            document.getElementById("alertSound").play();
-            alert("✅ Complaint Submitted!\nID: " + data.id);
-            location.reload();
-        } else {
-            alert("❌ " + data.message);
-        }
-    })
-    .catch(() => alert("❌ Server Error"));
-});
 
 </script>
 

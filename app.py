@@ -1,119 +1,71 @@
 from flask import Flask, render_template, request, jsonify, send_file, redirect, session, send_from_directory
-import sqlite3
 import os
 from dotenv import load_dotenv
 import random
 import base64
-from openpyxl import Workbook
-import threading
-import requests
+from openpyxl import Workbook, load_workbook
+from threading import Lock
+from datetime import datetime, timedelta
+from supabase import create_client
 
 load_dotenv()
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.secret_key = "secret123"
 
-print("🔥 FINAL EMAIL + TRACK VERSION RUNNING")
+print("🔥 FINAL SUPABASE + EXCEL VERSION RUNNING")
 
 # 🔐 ADMIN LOGIN
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
 
-# ✅ RESEND CONFIG
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL")
+# 🔥 SUPABASE CONFIG
+SUPABASE_URL = "https://ygqibfiqnpikejimqzsp.supabase.co"
+SUPABASE_KEY = "sb_publishable_xAwyjDC9kfowKyi-akhTgQ_s0aT1X5p"
 
-print("📧 KEY:", RESEND_API_KEY)
-print("📧 ADMIN:", ADMIN_EMAIL)
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# ================== PATH ==================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "database.db")
 
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "audio_files")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# -------- DATABASE --------
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
+EXCEL_FILE = os.path.join(BASE_DIR, "complaints.xlsx")
 
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS complaints (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            complaint_id TEXT,
-            name TEXT,
-            address TEXT,
-            contact TEXT,
-            email TEXT,
-            unit TEXT,
-            wo TEXT,
-            quarter TEXT,
-            complaint TEXT,
-            category TEXT,
-            subcategory TEXT,
-            reply TEXT,
-            audio TEXT
-        )
-    ''')
+# ================== EXCEL ==================
+excel_lock = Lock()
 
-    conn.commit()
-    conn.close()
+def create_excel():
+    if not os.path.exists(EXCEL_FILE):
+        wb = Workbook()
+        ws = wb.active
 
-init_db()
+        ws.append([
+            "ID", "Complaint ID", "Name", "Address", "Contact", "Email",
+            "Unit", "WO", "Quarter", "Complaint", "Category",
+            "Subcategory", "Reply", "Audio", "Date"
+        ])
 
-# -------- AUDIO --------
-@app.route('/audio/<filename>')
-def get_audio(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+        wb.save(EXCEL_FILE)
 
-# -------- EMAIL FUNCTION --------
-def send_email(data, audio_link=None):
-    try:
-        print("📤 SENDING EMAIL...")
+create_excel()
 
-        if not RESEND_API_KEY or not ADMIN_EMAIL:
-            print("❌ EMAIL CONFIG MISSING")
-            return
+def save_to_excel(data):
+    with excel_lock:
+        wb = load_workbook(EXCEL_FILE)
+        ws = wb.active
 
-        complaint_id, name, address, contact, email, unit, wo, quarter, category, subcategory, complaint_text = data
+        next_id = ws.max_row
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        body = f"""
-🚨 New Complaint Received
+        ws.append([next_id, *data[1:], now])
+        wb.save(EXCEL_FILE)
 
-🆔 ID: {complaint_id}
-👤 Name: {name}
-📞 Contact: {contact}
-📧 Email: {email}
+        print("✅ Saved to Excel")
 
-📂 Category: {category}
-📌 Subcategory: {subcategory}
+# ================== ROUTES ==================
 
-📝 Complaint:
-{complaint_text}
-
-🎧 Audio: {audio_link if audio_link else "No audio"}
-"""
-
-        res = requests.post(
-            "https://api.resend.com/emails",
-            headers={
-                "Authorization": f"Bearer {RESEND_API_KEY}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "from": "onboarding@resend.dev",
-                "to": [ADMIN_EMAIL],
-                "subject": f"🚨 New Complaint: {complaint_id}",
-                "html": f"<pre>{body}</pre>"
-            }
-        )
-
-        print("📧 STATUS:", res.status_code)
-
-    except Exception as e:
-        print("❌ EMAIL ERROR:", str(e))
-
-# -------- HOME --------
 @app.route('/')
 def landing():
     return render_template("landing.html")
@@ -151,30 +103,31 @@ def complaint():
 
                 audio_path = f"/audio/{filename}"
 
-            conn = sqlite3.connect(DB_PATH)
-            c = conn.cursor()
+            # 🔥 SUPABASE SAVE
+            data = {
+                "id": complaint_id,
+                "name": name,
+                "address": address,
+                "contact": contact,
+                "email": email,
+                "unit": unit,
+                "wo": wo,
+                "quarter": quarter,
+                "complaint": complaint_text,
+                "category": category,
+                "subcategory": subcategory,
+                "reply": "Pending",
+                "audio": audio_path
+            }
 
-            c.execute("""
-                INSERT INTO complaints 
-                (complaint_id, name, address, contact, email, unit, wo, quarter, complaint, category, subcategory, reply, audio)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                complaint_id, name, address, contact, email,
+            supabase.table("complaints").insert(data).execute()
+
+            # EXCEL SAVE
+            save_to_excel([
+                "", complaint_id, name, address, contact, email,
                 unit, wo, quarter, complaint_text,
                 category, subcategory, "Pending", audio_path
-            ))
-
-            conn.commit()
-            conn.close()
-
-            # EMAIL THREAD
-            t = threading.Thread(
-                target=send_email,
-                args=((complaint_id, name, address, contact, email,
-                       unit, wo, quarter, category, subcategory, complaint_text), audio_path)
-            )
-            t.daemon = True
-            t.start()
+            ])
 
             return jsonify({"status": "success", "id": complaint_id})
 
@@ -184,48 +137,80 @@ def complaint():
 
     return render_template("complaint.html")
 
-# -------- TRACK COMPLAINT --------
-@app.route('/track', methods=['GET', 'POST'])
-def track():
-    if request.method == 'POST':
-        complaint_id = request.form.get('complaint_id')
-
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-
-        c.execute("SELECT * FROM complaints WHERE complaint_id = ?", (complaint_id,))
-        data = c.fetchone()
-
-        conn.close()
-
-        if data:
-            return render_template("track.html", data=data)
-        else:
-            return render_template("track.html", error="❌ Complaint not found")
-
-    return render_template("track.html")
-
-# -------- ADMIN --------
+# -------- ADMIN LOGIN --------
 @app.route('/admin', methods=['GET', 'POST'])
 def admin_login():
     if request.method == "POST":
         if request.form.get("username") == ADMIN_USER and request.form.get("password") == ADMIN_PASS:
             session['admin'] = True
             return redirect("/dashboard")
-        return "❌ Wrong Credentials"
+        return "Wrong Credentials"
     return render_template("login.html")
 
+# -------- DASHBOARD --------
 @app.route('/dashboard')
 def dashboard():
     if not session.get('admin'):
         return redirect("/admin")
 
-    conn = sqlite3.connect(DB_PATH)
-    data = conn.execute("SELECT * FROM complaints").fetchall()
-    conn.close()
+    res = supabase.table("complaints").select("*").execute()
+    data = res.data
 
     return render_template("admin.html", data=data)
 
+# -------- REPLY --------
+@app.route('/reply/<id>', methods=['POST'])
+def reply(id):
+    reply_text = request.form.get('reply')
+
+    supabase.table("complaints").update({
+        "reply": reply_text
+    }).eq("id", id).execute()
+
+    return jsonify({"status": "success"})
+
+# -------- DELETE --------
+@app.route('/delete/<id>', methods=['POST'])
+def delete(id):
+    supabase.table("complaints").delete().eq("id", id).execute()
+    return jsonify({"status": "success"})
+
+# -------- DOWNLOAD (LAST 24 HOURS) --------
+@app.route('/download')
+def download():
+    if not os.path.exists(EXCEL_FILE):
+        return "No data found"
+
+    wb = load_workbook(EXCEL_FILE)
+    ws = wb.active
+
+    new_wb = Workbook()
+    new_ws = new_wb.active
+
+    new_ws.append([cell.value for cell in ws[1]])
+
+    now = datetime.now()
+    last_24 = now - timedelta(hours=24)
+
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        try:
+            row_date = datetime.strptime(row[-1], "%Y-%m-%d %H:%M:%S")
+            if row_date >= last_24:
+                new_ws.append(row)
+        except:
+            continue
+
+    file_path = os.path.join(BASE_DIR, "last_24_hours.xlsx")
+    new_wb.save(file_path)
+
+    return send_file(file_path, as_attachment=True)
+
+# -------- AUDIO --------
+@app.route('/audio/<filename>')
+def get_audio(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+# -------- LOGOUT --------
 @app.route('/logout')
 def logout():
     session.clear()
