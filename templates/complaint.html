@@ -10,54 +10,43 @@
 
 <div class="container">
 
-    <p class="subtitle">Welfare & grievance redressal platform for unit families</p>
+    <p class="subtitle">Welfare & grievance redressal platform</p>
 
-    <div class="note">
-        All submissions can be made anonymously and will be handled with strict confidentiality.
-    </div>
+    <audio id="alertSound" src="/static/alert.mp3"></audio>
 
-    <!-- 🔔 SOUND -->
-    <audio id="alertSound" src="/static/alert.mp3" preload="auto"></audio>
+    <form id="complaintForm">
 
-    <!-- ✅ FIXED FORM -->
-    <form method="POST" action="/complaint">
-
-    <!-- BASIC DETAILS -->
     <div class="card">
         <h3>Basic Details</h3>
-
         <input type="text" name="name" placeholder="Name" required>
         <input type="text" name="wo" placeholder="Husband Rank & Name">
         <input type="text" name="contact" placeholder="Contact Number" required>
         <input type="text" name="address" placeholder="Address">
-
         <input type="email" name="email" placeholder="Email">
         <input type="text" name="unit" placeholder="Unit">
         <input type="text" name="quarter" placeholder="Quarter">
     </div>
 
-    <!-- CATEGORY -->
     <div class="card">
         <h3>Select Category</h3>
 
         <div class="grid">
-            <div class="box" onclick="selectCategory(event,'ration')">🍽️<br>Ration</div>
-            <div class="box" onclick="selectCategory(event,'accommodation')">🏠<br>Accommodation</div>
-            <div class="box" onclick="selectCategory(event,'welfare')">👨‍👩‍👧<br>Welfare</div>
-            <div class="box" onclick="selectCategory(event,'safety')">🛡️<br>Safety</div>
+            <div class="box" onclick="selectCategory(event,'ration')">🍽️ Ration</div>
+            <div class="box" onclick="selectCategory(event,'accommodation')">🏠 Accommodation</div>
+            <div class="box" onclick="selectCategory(event,'welfare')">👨‍👩‍👧 Welfare</div>
+            <div class="box" onclick="selectCategory(event,'safety')">🛡️ Safety</div>
         </div>
 
         <input type="hidden" name="category" id="category">
         <input type="hidden" name="subcategory" id="subcategory">
 
-        <div id="subcategoryBox" class="subcategory-box"></div>
+        <div id="subcategoryBox"></div>
     </div>
 
-    <!-- DESCRIPTION -->
     <div class="card">
         <h3>Describe Your Concern</h3>
 
-        <textarea name="complaint" placeholder="Write your issue here..." required></textarea>
+        <textarea name="complaint" required></textarea>
 
         <br>
         <button type="button" onclick="startRecording()">🎤 Record</button>
@@ -66,96 +55,93 @@
         <br><br>
         <audio id="audioPlayback" controls></audio>
 
-        <!-- ✅ FIX (name changed) -->
         <input type="hidden" id="audioData" name="audio_data">
     </div>
 
-    <button type="button" onclick="openEmergency()" class="emergency">🚨 Emergency</button>
-
-    <!-- ✅ IMPORTANT -->
     <button type="submit" class="submit">Submit</button>
 
     </form>
 
 </div>
 
-<!-- 🚨 POPUP -->
-<div id="emergencyPopup" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:999;">
-<div style="background:white;width:320px;margin:120px auto;padding:20px;border-radius:12px;text-align:center;">
-<h3>🚨 Emergency Contacts</h3>
-
-<button onclick="closeEmergency()">❌ Close</button>
-</div>
-</div>
-
 <script>
 
 // CATEGORY
 let options = {
-    ration: ["Non-availability of ration","Poor quality","Delayed supply","CSD issue"],
-    accommodation: ["Water supply","Electricity","Repairs","Sanitation issue"],
-    welfare: ["Family issues","Financial stress","Counselling request","Children education"],
-    safety: ["Harassment","Security safety","Domestic safety","Neighbour disputes"]
+    ration: ["Non-availability","Poor quality"],
+    accommodation: ["Water","Electricity"],
+    welfare: ["Family issue","Education"],
+    safety: ["Harassment","Security"]
 };
 
 function selectCategory(e, cat) {
     document.getElementById("category").value = cat;
-
-    document.querySelectorAll(".box").forEach(el => el.classList.remove("active"));
-    e.currentTarget.classList.add("active");
-
-    let box = document.getElementById("subcategoryBox");
-    box.innerHTML = "";
-
-    options[cat].forEach(item => {
-        let div = document.createElement("div");
-        div.className = "sub-option";
-        div.innerText = item;
-
-        div.onclick = function () {
-            document.querySelectorAll(".sub-option").forEach(el => el.classList.remove("active"));
-            div.classList.add("active");
-            document.getElementById("subcategory").value = item;
-        };
-
-        box.appendChild(div);
-    });
 }
 
-// 🎤 RECORDING
+// 🎤 AUDIO
 let mediaRecorder;
 let audioChunks = [];
 
 async function startRecording() {
-    let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    audioChunks = [];
+    try {
+        let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
 
-    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
 
-    mediaRecorder.onstop = () => {
-        let blob = new Blob(audioChunks, { type: 'audio/webm' });
-        let reader = new FileReader();
-        reader.readAsDataURL(blob);
-        reader.onloadend = () => {
-            document.getElementById("audioData").value = reader.result;
+        mediaRecorder.onstop = () => {
+            let blob = new Blob(audioChunks, { type: 'audio/webm' });
+            let url = URL.createObjectURL(blob);
+            document.getElementById("audioPlayback").src = url;
+
+            let reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => {
+                document.getElementById("audioData").value = reader.result;
+            };
         };
-    };
 
-    mediaRecorder.start();
+        mediaRecorder.start();
+        alert("Recording started");
+
+    } catch (err) {
+        alert("Mic permission allow karo!");
+        console.log(err);
+    }
 }
 
 function stopRecording() {
-    if (mediaRecorder) mediaRecorder.stop();
+    if (mediaRecorder) {
+        mediaRecorder.stop();
+        alert("Recording stopped");
+    }
 }
 
-// 🚨 POPUP
-function openEmergency() {
-    document.getElementById("emergencyPopup").style.display = "block";
-}
-function closeEmergency() {
-    document.getElementById("emergencyPopup").style.display = "none";
-}
+// ✅ FORM SUBMIT (IMPORTANT FIX)
+document.getElementById("complaintForm").addEventListener("submit", function(e){
+    e.preventDefault();
+
+    let formData = new FormData(this);
+
+    fetch("/complaint", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === "success"){
+            alert("Complaint Submitted! ID: " + data.id);
+            document.getElementById("complaintForm").reset();
+        } else {
+            alert("Error: " + data.message);
+        }
+    })
+    .catch(err => {
+        alert("Submission failed");
+        console.log(err);
+    });
+});
 
 </script>
 
