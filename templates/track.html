@@ -1,35 +1,65 @@
-<link rel="stylesheet" href="/static/style.css">
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Track Complaint</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
 
 <div class="navbar">Track Complaint</div>
 
 <div class="container">
-<div class="card">
 
-<form method="POST">
-    <input name="complaint_id" placeholder="Enter Complaint ID" required>
-    <button type="submit">Track</button>
-</form>
+    <div class="card">
 
-{% if data %}
-    <h3>✅ Complaint Found</h3>
+        <h2 style="text-align:center;">Track Your Complaint</h2>
 
-    <p><b>ID:</b> {{ data[1] }}</p>
-    <p><b>Name:</b> {{ data[2] }}</p>
-    <p><b>Complaint:</b> {{ data[9] }}</p>
-    <p><b>Category:</b> {{ data[10] }}</p>
-    <p><b>Subcategory:</b> {{ data[11] }}</p>
-    <p><b>Reply:</b> {{ data[12] }}</p>
+        <!-- 🔍 TRACK FORM -->
+        <form method="POST">
+            <input name="complaint_id" placeholder="Enter Complaint ID (e.g. CMP12345)" required>
+            <button type="submit" class="submit" style="margin-top:10px;">Track</button>
+        </form>
 
-    {% if data[13] %}
-        <p><b>Audio:</b></p>
-        <audio controls>
-            <source src="{{ data[13] }}" type="audio/webm">
-        </audio>
-    {% endif %}
+        <hr style="margin:20px 0;">
 
-{% elif request.method == 'POST' %}
-    <p style="color:red;">❌ No complaint found</p>
-{% endif %}
+        <!-- ✅ RESULT FOUND -->
+        {% if data %}
+            <h3 style="color:green;">✅ Complaint Found</h3>
+
+            <p><b>Complaint ID:</b> {{ data[1] }}</p>
+            <p><b>Name:</b> {{ data[2] }}</p>
+            <p><b>Contact:</b> {{ data[4] }}</p>
+            <p><b>Address:</b> {{ data[3] }}</p>
+
+            <p><b>Category:</b> {{ data[10] }}</p>
+            <p><b>Subcategory:</b> {{ data[11] }}</p>
+
+            <p><b>Complaint:</b><br> {{ data[9] }}</p>
+
+            <!-- 🔥 STATUS / REPLY -->
+            <p>
+                <b>Status:</b> 
+                <span style="color: {% if data[12] == 'Pending' %}orange{% else %}green{% endif %}; font-weight:bold;">
+                    {{ data[12] }}
+                </span>
+            </p>
+
+            <!-- 🎤 AUDIO -->
+            {% if data[13] %}
+                <p><b>Audio:</b></p>
+                <audio controls style="width:100%;">
+                    <source src="{{ data[13] }}" type="audio/webm">
+                </audio>
+            {% endif %}
+
+        <!-- ❌ NOT FOUND -->
+        {% elif request.method == 'POST' %}
+            <p style="color:red; font-weight:bold;">❌ No complaint found with this ID</p>
+        {% endif %}
+
+    </div>
 
 </div>
-</div>
+
+</body>
+</html>
