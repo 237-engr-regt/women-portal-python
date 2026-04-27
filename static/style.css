@@ -124,6 +124,30 @@ textarea {
     transform: scale(1.05);
 }
 
+/* 🔥 SUBCATEGORY BOX (NEW ADD) */
+.sub-box {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    margin-top: 10px;
+    cursor: pointer;
+    background: #f9f9f9;
+    transition: 0.3s;
+    font-size: 14px;
+}
+
+/* hover effect */
+.sub-box:hover {
+    background: #e6efe6;
+    transform: scale(1.02);
+}
+
+/* active selected */
+.sub-box.active {
+    border: 2px solid #2f4f3f;
+    background: #dbeedd;
+}
+
 /* AUDIO */
 .audio-controls {
     margin-top: 10px;
@@ -144,7 +168,7 @@ textarea {
     border-radius: 8px;
 }
 
-/* 🎤 AUDIO PLAYER LOOK */
+/* 🎤 AUDIO PLAYER */
 audio {
     width: 100%;
     margin-top: 10px;

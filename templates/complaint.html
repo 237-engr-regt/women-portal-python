@@ -29,7 +29,6 @@
         <input type="text" name="contact" placeholder="Contact Number" required>
         <input type="text" name="address" placeholder="Address">
 
-        <!-- ✅ Added missing fields -->
         <input type="email" name="email" placeholder="Email (optional)">
         <input type="text" name="unit" placeholder="Unit (optional)">
         <input type="text" name="quarter" placeholder="Quarter (optional)">
@@ -46,7 +45,12 @@
             <div class="box" onclick="selectCategory(event,'safety')">🛡️<br>Safety</div>
         </div>
 
+        <!-- hidden -->
         <input type="hidden" name="category" id="category">
+        <input type="hidden" name="subcategory" id="subcategory">
+
+        <!-- 🔥 SUBCATEGORY AREA -->
+        <div id="subcategoryBox" style="margin-top:15px;"></div>
     </div>
 
     <!-- DESCRIPTION -->
@@ -66,7 +70,7 @@
         <input type="hidden" id="audioData" name="audio_data">
     </div>
 
-    <!-- 🚨 EMERGENCY BUTTON -->
+    <!-- 🚨 EMERGENCY -->
     <button type="button" class="emergency" onclick="showContacts()">
         🚨 Emergency
     </button>
@@ -91,12 +95,60 @@ function showContacts() {
     );
 }
 
+// 🔥 SUBCATEGORY DATA
+const subcategories = {
+    ration: [
+        "Non-availability of ration",
+        "Poor quality",
+        "Delayed supply",
+        "CSD issue"
+    ],
+    accommodation: [
+        "Water supply",
+        "Electricity",
+        "Repairs",
+        "Sanitation issue"
+    ],
+    welfare: [
+        "Family issues",
+        "Financial stress",
+        "Counselling request",
+        "Children education"
+    ],
+    safety: [
+        "Harassment",
+        "Security safety",
+        "Domestic safety",
+        "Neighbour disputes"
+    ]
+};
+
 // ✅ CATEGORY SELECT
 function selectCategory(e, cat) {
     document.getElementById("category").value = cat;
 
     document.querySelectorAll(".box").forEach(b => b.classList.remove("active"));
     e.currentTarget.classList.add("active");
+
+    let html = "";
+
+    subcategories[cat].forEach(item => {
+        html += `
+            <div class="sub-box" onclick="selectSubcategory('${item}', this)">
+                ${item}
+            </div>
+        `;
+    });
+
+    document.getElementById("subcategoryBox").innerHTML = html;
+}
+
+// ✅ SUBCATEGORY SELECT
+function selectSubcategory(value, el) {
+    document.getElementById("subcategory").value = value;
+
+    document.querySelectorAll(".sub-box").forEach(b => b.classList.remove("active"));
+    el.classList.add("active");
 }
 
 // 🎤 AUDIO
@@ -152,6 +204,7 @@ document.getElementById("complaintForm").addEventListener("submit", function(e){
         alert("Complaint Submitted! ID: " + data.id);
         this.reset();
         document.getElementById("audioPlayback").src = "";
+        document.getElementById("subcategoryBox").innerHTML = "";
     })
     .catch(() => alert("Submission failed"));
 });
