@@ -23,6 +23,12 @@ SMTP_PASS = os.getenv("SMTP_PASS")
 
 def send_alert_email(data):
     try:
+        print("📧 Sending Email...")
+
+        if not SMTP_USER or not SMTP_PASS:
+            print("❌ SMTP CONFIG MISSING")
+            return
+
         msg = MIMEText(f"""
 🚨 NEW COMPLAINT RECEIVED 🚨
 
@@ -36,7 +42,7 @@ Complaint:
 {data['complaint']}
         """)
 
-        msg['Subject'] = "🚨 URGENT: New Complaint Submitted"
+        msg['Subject'] = "🚨 New Complaint Alert"
         msg['From'] = SMTP_USER
         msg['To'] = SMTP_USER
 
@@ -46,16 +52,17 @@ Complaint:
         server.send_message(msg)
         server.quit()
 
-        print("✅ Email Alert Sent")
+        print("✅ EMAIL SENT SUCCESSFULLY")
 
     except Exception as e:
-        print("❌ Email Error:", e)
+        print("❌ EMAIL ERROR:", e)
 
-# ================= PATH =================
-UPLOAD_FOLDER = "audio_files"
+
+# ================= PATH (FIXED FOR RENDER) =================
+UPLOAD_FOLDER = "/tmp/audio_files"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-EXCEL_FILE = "complaints.xlsx"
+EXCEL_FILE = "/tmp/complaints.xlsx"
 
 # ================= EXCEL =================
 excel_lock = Lock()
@@ -104,7 +111,7 @@ def save_to_excel(data):
 def home():
     return render_template("landing.html")
 
-# ✅ COMPLAINT
+
 @app.route('/complaint', methods=['GET', 'POST'])
 def complaint():
 
@@ -146,7 +153,7 @@ def complaint():
             # ✅ SAVE
             save_to_excel(data)
 
-            # 🔥 EMAIL ALERT
+            # 🔥 EMAIL ALERT (IMPORTANT)
             send_alert_email(data)
 
             return jsonify({"status": "success", "id": complaint_id})
@@ -190,24 +197,6 @@ def admin():
 @app.route("/download_excel")
 def download_excel():
     return send_file(EXCEL_FILE, as_attachment=True)
-
-
-# ✅ REPLY
-@app.route('/reply/<cid>', methods=['POST'])
-def reply(cid):
-    reply_text = request.form.get("reply", "")
-
-    wb = load_workbook(EXCEL_FILE)
-    ws = wb.active
-
-    for row in ws.iter_rows(min_row=2):
-        if str(row[1].value) == cid:
-            row[12].value = reply_text
-            break
-
-    wb.save(EXCEL_FILE)
-
-    return redirect("/admin")
 
 
 # ================= RUN =================
