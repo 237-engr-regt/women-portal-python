@@ -16,10 +16,10 @@ from email import encoders
 # ================= INIT =================
 load_dotenv()
 
-app = Flask(__name__, static_folder='static', static_url_path='/static')
+app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.getenv("SECRET_KEY", "secret123")
 
-print("🔥 CLEAN FINAL VERSION RUNNING")
+print("🔥 FINAL WORKING VERSION RUNNING")
 
 # ================= EMAIL =================
 ADMIN_EMAIL = os.getenv("SMTP_USER")
@@ -56,11 +56,10 @@ def save_to_excel(data):
     with excel_lock:
         wb = load_workbook(EXCEL_FILE)
         ws = wb.active
-        next_id = ws.max_row
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         ws.append([
-            next_id,
+            ws.max_row,
             data["complaint_id"],
             data["name"],
             data["address"],
@@ -114,15 +113,21 @@ def send_email(subject, body, attachment_path=None):
         print("✅ Email sent")
 
     except Exception as e:
-        print("❌ EMAIL ERROR:", e)
+        print("❌ Email error:", e)
 
 # ================= ROUTES =================
+
+# HOME PAGE
 @app.route('/')
 def home():
     return render_template("landing.html")
 
+
+# 🔥 MAIN COMPLAINT PAGE (THIS FIXES YOUR ISSUE)
 @app.route('/complaint', methods=['GET', 'POST'])
 def complaint():
+
+    # 👉 FORM SUBMIT
     if request.method == 'POST':
         try:
             complaint_id = "CMP" + str(random.randint(10000, 99999))
@@ -150,8 +155,7 @@ def complaint():
             if audio_data:
                 header, encoded = audio_data.split(",", 1)
                 file_data = base64.b64decode(encoded)
-                filename = f"{complaint_id}.webm"
-                filepath = os.path.join(UPLOAD_FOLDER, filename)
+                filepath = os.path.join(UPLOAD_FOLDER, f"{complaint_id}.webm")
 
                 with open(filepath, "wb") as f:
                     f.write(file_data)
@@ -159,18 +163,21 @@ def complaint():
                 data["audio"] = filepath
                 audio_path = filepath
 
-            # SAVE
+            # SAVE TO EXCEL
             save_to_excel(data)
 
-            # EMAIL
-            email_body = f"""
-Complaint ID: {data['complaint_id']}
+            # SEND EMAIL
+            send_email(
+                "New Complaint Submitted",
+                f"""
+Complaint ID: {complaint_id}
 Name: {data['name']}
 Contact: {data['contact']}
 Complaint: {data['complaint']}
 Category: {data['category']}
-"""
-            send_email("New Complaint Submitted", email_body, audio_path)
+""",
+                audio_path
+            )
 
             return jsonify({"status": "success", "id": complaint_id})
 
@@ -178,8 +185,9 @@ Category: {data['category']}
             print("❌ ERROR:", e)
             return jsonify({"status": "error", "message": str(e)})
 
-    # ✅ IMPORTANT (THIS FIXES YOUR MAIN ISSUE)
-    return render_template("complaint.html")
+    # 👉 🔥 IMPORTANT: ALWAYS LOAD DASHBOARD UI
+    return render_template("dashboard.html")
+
 
 # ================= RUN =================
 if __name__ == "__main__":

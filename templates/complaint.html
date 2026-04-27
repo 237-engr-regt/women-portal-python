@@ -1,196 +1,162 @@
-from flask import Flask, render_template, request, jsonify
-import os
-from dotenv import load_dotenv
-import random
-import base64
-from openpyxl import Workbook, load_workbook
-from threading import Lock
-from datetime import datetime
-import smtplib
-import socket
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sahara Portal</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
 
-# ================== INIT ==================
-load_dotenv()
+<div class="navbar">Sahara Portal</div>
 
-app = Flask(__name__, static_folder='static', static_url_path='/static')
-app.secret_key = os.getenv("SECRET_KEY", "secret123")
+<div class="container">
 
-print("🔥 FINAL VERSION WITH EMERGENCY BUTTON INJECTION")
+    <h1>Sahara Portal</h1>
+    <p class="subtitle">Welfare & grievance redressal platform for unit families</p>
 
-# ================== EMAIL CONFIG ==================
-ADMIN_EMAIL = os.getenv("SMTP_USER")
+    <div class="notice">
+        All submissions can be made anonymously and will be handled with strict confidentiality.
+    </div>
 
-SMTP_SERVER = os.getenv("SMTP_SERVER")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASS = os.getenv("SMTP_PASS")
+    <audio id="alertSound" src="/static/alert.mp3"></audio>
 
-# ================== PATH ==================
-UPLOAD_FOLDER = "/tmp/audio_files"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    <form id="complaintForm">
 
-EXCEL_FILE = "/tmp/complaints.xlsx"
+    <!-- BASIC DETAILS -->
+    <div class="card">
+        <h3>Basic Details</h3>
+        <input type="text" name="name" placeholder="Name" required>
+        <input type="text" name="wo" placeholder="Husband Rank & Name">
+        <input type="text" name="contact" placeholder="Contact Number" required>
+        <input type="text" name="address" placeholder="Address">
 
-# ================== EXCEL ==================
-excel_lock = Lock()
+        <!-- ✅ Added missing fields -->
+        <input type="email" name="email" placeholder="Email (optional)">
+        <input type="text" name="unit" placeholder="Unit (optional)">
+        <input type="text" name="quarter" placeholder="Quarter (optional)">
+    </div>
 
-def create_excel():
-    if not os.path.exists(EXCEL_FILE):
-        wb = Workbook()
-        ws = wb.active
-        ws.append([
-            "ID", "Complaint ID", "Name", "Address", "Contact", "Email",
-            "Unit", "WO", "Quarter", "Complaint", "Category",
-            "Subcategory", "Reply", "Audio", "Date"
-        ])
-        wb.save(EXCEL_FILE)
+    <!-- CATEGORY -->
+    <div class="card">
+        <h3>Select Category</h3>
 
-create_excel()
+        <div class="grid">
+            <div class="box" onclick="selectCategory(event,'ration')">🍽️<br>Ration</div>
+            <div class="box" onclick="selectCategory(event,'accommodation')">🏠<br>Accommodation</div>
+            <div class="box" onclick="selectCategory(event,'welfare')">👨‍👩‍👧<br>Welfare</div>
+            <div class="box" onclick="selectCategory(event,'safety')">🛡️<br>Safety</div>
+        </div>
 
-def save_to_excel(data):
-    with excel_lock:
-        wb = load_workbook(EXCEL_FILE)
-        ws = wb.active
-        next_id = ws.max_row
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        <input type="hidden" name="category" id="category">
+    </div>
 
-        ws.append([
-            next_id,
-            data["complaint_id"],
-            data["name"],
-            data["address"],
-            data["contact"],
-            data["email"],
-            data["unit"],
-            data["wo"],
-            data["quarter"],
-            data["complaint"],
-            data["category"],
-            data["subcategory"],
-            data["reply"],
-            data["audio"],
-            now
-        ])
-        wb.save(EXCEL_FILE)
+    <!-- DESCRIPTION -->
+    <div class="card">
+        <h3>Describe Your Concern</h3>
 
-# ================== EMAIL ==================
-def send_email(subject, body, attachment_path=None):
-    try:
-        if not SMTP_SERVER or not SMTP_USER or not SMTP_PASS:
-            return
+        <textarea name="complaint" placeholder="Write your issue here..." required></textarea>
 
-        socket.gethostbyname(SMTP_SERVER)
+        <div class="audio-controls">
+            <button type="button" class="record" onclick="startRecording()">🎤 Record</button>
+            <button type="button" class="stop" onclick="stopRecording()">⏹ Stop</button>
+        </div>
 
-        msg = MIMEMultipart()
-        msg['From'] = SMTP_USER
-        msg['To'] = ADMIN_EMAIL
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'plain'))
+        <br>
+        <audio id="audioPlayback" controls></audio>
 
-        if attachment_path and os.path.exists(attachment_path):
-            with open(attachment_path, "rb") as f:
-                part = MIMEBase('application', 'octet-stream')
-                part.set_payload(f.read())
-                encoders.encode_base64(part)
-                part.add_header(
-                    'Content-Disposition',
-                    f'attachment; filename={os.path.basename(attachment_path)}'
-                )
-                msg.attach(part)
+        <input type="hidden" id="audioData" name="audio_data">
+    </div>
 
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=10)
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.send_message(msg)
-        server.quit()
-
-    except Exception as e:
-        print("Email Error:", e)
-
-# ================== ROUTES ==================
-@app.route('/')
-def landing():
-    return render_template("landing.html")
-
-@app.route('/complaint', methods=['GET', 'POST'])
-def complaint():
-    if request.method == 'POST':
-        try:
-            complaint_id = "CMP" + str(random.randint(10000, 99999))
-
-            data = {
-                "complaint_id": complaint_id,
-                "name": request.form.get('name'),
-                "address": request.form.get('address'),
-                "contact": request.form.get('contact'),
-                "email": request.form.get('email'),
-                "unit": request.form.get('unit'),
-                "wo": request.form.get('wo'),
-                "quarter": request.form.get('quarter'),
-                "complaint": request.form.get('complaint'),
-                "category": request.form.get('category'),
-                "subcategory": request.form.get('subcategory'),
-                "reply": "Pending",
-                "audio": ""
-            }
-
-            audio_data = request.form.get("audio_data")
-            audio_path = None
-
-            if audio_data:
-                header, encoded = audio_data.split(",", 1)
-                file_data = base64.b64decode(encoded)
-                filepath = os.path.join(UPLOAD_FOLDER, f"{complaint_id}.webm")
-
-                with open(filepath, "wb") as f:
-                    f.write(file_data)
-
-                data["audio"] = filepath
-                audio_path = filepath
-
-            save_to_excel(data)
-
-            email_body = f"""
-Complaint ID: {data['complaint_id']}
-Name: {data['name']}
-Contact: {data['contact']}
-Complaint: {data['complaint']}
-"""
-
-            send_email("New Complaint", email_body, audio_path)
-
-            return jsonify({"status": "success", "id": complaint_id})
-
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)})
-
-    # 🔥 FORCE HTML WITH BUTTON (NO TEMPLATE ISSUE)
-    return """
-    <html>
-    <body>
-    <h2>Complaint Page (Emergency Enabled)</h2>
-
-    <button onclick="showContacts()" 
-    style="position:fixed;bottom:20px;right:20px;background:red;color:white;padding:15px;">
-    🚨 Emergency
+    <!-- 🚨 EMERGENCY BUTTON -->
+    <button type="button" class="emergency" onclick="showContacts()">
+        🚨 Emergency
     </button>
 
-    <script>
-    function showContacts(){
-        alert("1.CO 12XX00XX34\\n2.ADJT 56XX00XX78\\n3.QM 94XX00XX37\\n4.SM 64XX00XX37");
+    <!-- SUBMIT -->
+    <button type="submit" class="submit">Submit</button>
+
+    </form>
+
+</div>
+
+<script>
+
+// 🚨 Emergency
+function showContacts() {
+    alert(
+        "Emergency Contacts:\n\n" +
+        "1. CO: 12XX00XX34\n" +
+        "2. ADJT: 56XX00XX78\n" +
+        "3. QM: 94XX00XX37\n" +
+        "4. SM: 64XX00XX37"
+    );
+}
+
+// ✅ CATEGORY SELECT
+function selectCategory(e, cat) {
+    document.getElementById("category").value = cat;
+
+    document.querySelectorAll(".box").forEach(b => b.classList.remove("active"));
+    e.currentTarget.classList.add("active");
+}
+
+// 🎤 AUDIO
+let mediaRecorder;
+let audioChunks = [];
+
+async function startRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+        mediaRecorder.onstop = () => {
+            const blob = new Blob(audioChunks, { type: 'audio/webm' });
+
+            document.getElementById("audioPlayback").src = URL.createObjectURL(blob);
+
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => {
+                document.getElementById("audioData").value = reader.result;
+            };
+        };
+
+        mediaRecorder.start();
+
+    } catch (err) {
+        alert("Mic permission allow karo!");
     }
-    </script>
+}
 
-    <p>If you see this button → everything working</p>
+function stopRecording() {
+    if (mediaRecorder) {
+        mediaRecorder.stop();
+    }
+}
 
-    </body>
-    </html>
-    """
+// ✅ SUBMIT
+document.getElementById("complaintForm").addEventListener("submit", function(e){
+    e.preventDefault();
 
-# ================== RUN ==================
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    let formData = new FormData(this);
+
+    fetch("/complaint", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("Complaint Submitted! ID: " + data.id);
+        this.reset();
+        document.getElementById("audioPlayback").src = "";
+    })
+    .catch(() => alert("Submission failed"));
+});
+
+</script>
+
+</body>
+</html>
