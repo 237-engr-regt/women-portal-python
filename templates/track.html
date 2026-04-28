@@ -14,12 +14,11 @@
 
         <h2 style="text-align:center;">Track Your Complaint</h2>
 
-        <!-- 🔍 INPUT -->
-        <input id="complaint_id" placeholder="Enter Complaint ID (e.g. CMP12345)">
-        
-        <button onclick="trackComplaint()" class="submit" style="margin-top:10px;">
-            Track
-        </button>
+        <!-- 🔍 TRACK FORM -->
+        <form id="trackForm">
+            <input name="complaint_id" placeholder="Enter Complaint ID (e.g. CMP12345)" required>
+            <button type="submit" class="submit" style="margin-top:10px;">Track</button>
+        </form>
 
         <hr style="margin:20px 0;">
 
@@ -32,20 +31,14 @@
 
 <script>
 
-// 🔥 YOUR GOOGLE SCRIPT URL
-const SHEET_API = "https://script.google.com/macros/s/AKfycbwULvlFiZY8fpezE-lVzA0MRMtLysDlzzQM_GJ2GjhE7Zb33EE7N2-MA_4gUSTBQvetDg/exec";
+const SHEET_API = "https://script.google.com/macros/s/AKfycbx9YUvCpKgwBrFiMfi3aFYBCCsnFavoc88OWFlgsBKjPL5df29dn0WrARbstL4hTXwRzg/exec";
 
-function trackComplaint(){
+document.getElementById("trackForm").addEventListener("submit", function(e){
+    e.preventDefault();
 
-    let id = document.getElementById("complaint_id").value.trim();
-    let result = document.getElementById("result");
+    let id = document.querySelector("input[name='complaint_id']").value.trim();
 
-    if(!id){
-        alert("Enter Complaint ID");
-        return;
-    }
-
-    result.innerHTML = "Loading...";
+    document.getElementById("result").innerHTML = "⏳ Loading...";
 
     fetch(SHEET_API)
     .then(res => res.json())
@@ -54,49 +47,40 @@ function trackComplaint(){
         let found = null;
 
         for(let i = 1; i < data.length; i++){
-
-            // Column mapping (IMPORTANT)
-            // 0 = Complaint ID
-            // 1 = Name
-            // 2 = Contact
-            // 3 = Complaint
-            // 4 = Category
-            // 5 = Subcategory
-            // 6 = Date
-
-            if(data[i][0] == id){
+            if(data[i][0] === id){
                 found = data[i];
                 break;
             }
         }
 
         if(found){
-
-            result.innerHTML = `
+            document.getElementById("result").innerHTML = `
                 <h3 style="color:green;">✅ Complaint Found</h3>
-
                 <p><b>Complaint ID:</b> ${found[0]}</p>
                 <p><b>Name:</b> ${found[1]}</p>
                 <p><b>Contact:</b> ${found[2]}</p>
-
-                <p><b>Complaint:</b><br>${found[3]}</p>
-
+                <p><b>Complaint:</b> ${found[3]}</p>
                 <p><b>Category:</b> ${found[4]}</p>
                 <p><b>Subcategory:</b> ${found[5]}</p>
-
                 <p><b>Date:</b> ${found[6]}</p>
             `;
-        }
-        else{
-            result.innerHTML = "<p style='color:red; font-weight:bold;'>❌ No complaint found</p>";
+        } else {
+            document.getElementById("result").innerHTML = `
+                <p style="color:red; font-weight:bold;">
+                ❌ No complaint found with this ID
+                </p>
+            `;
         }
 
     })
     .catch(err => {
-        result.innerHTML = "<p style='color:red;'>Error loading data</p>";
-        console.log(err);
+        console.error(err);
+        document.getElementById("result").innerHTML = `
+            <p style="color:red;">❌ Error loading data</p>
+        `;
     });
-}
+
+});
 
 </script>
 
