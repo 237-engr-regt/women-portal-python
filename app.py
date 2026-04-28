@@ -11,6 +11,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
+import requests   # ✅ NEW
 
 # ================= INIT =================
 load_dotenv()
@@ -18,11 +19,29 @@ load_dotenv()
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.getenv("SECRET_KEY", "secret123")
 
-print("🔥 FINAL SYSTEM WITH 24H FILTER RUNNING")
+print("🔥 FINAL SYSTEM WITH GOOGLE SHEET + EMAIL RUNNING")
 
 # ================= ADMIN LOGIN =================
 ADMIN_USER = "237engrregt"
 ADMIN_PASS = "237237chakde"
+
+# ================= GOOGLE SHEET URL =================
+GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwULvlFiZY8fpezE-lVzA0MRMtLysDlzzQM_GJ2GjhE7Zb33EE7N2-MA_4gUSTBQvetDg/exec"
+
+def send_to_google_sheet(data):
+    try:
+        payload = {
+            "complaint_id": data["complaint_id"],
+            "name": data["name"],
+            "contact": data["contact"],
+            "complaint": data["complaint"],
+            "category": data["category"],
+            "subcategory": data["subcategory"]
+        }
+        requests.post(GOOGLE_SCRIPT_URL, json=payload)
+        print("✅ Sent to Google Sheet")
+    except Exception as e:
+        print("❌ Google Sheet error:", e)
 
 # ================= EMAIL CONFIG =================
 SMTP_USER = os.getenv("SMTP_USER")
@@ -122,7 +141,6 @@ def save_to_excel(data):
 def home():
     return render_template("landing.html")
 
-# 🔐 LOGIN
 @app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'POST':
@@ -132,13 +150,12 @@ def login():
         return "❌ Wrong credentials"
     return render_template("login.html")
 
-# 🔓 LOGOUT
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect("/login")
 
-# 📝 COMPLAINT
+# ================= COMPLAINT =================
 @app.route('/complaint', methods=['GET','POST'])
 def complaint():
     if request.method == 'POST':
@@ -160,7 +177,7 @@ def complaint():
             "audio": ""
         }
 
-        # AUDIO SAVE
+        # AUDIO
         audio_data = request.form.get("audio_data")
         if audio_data and "," in audio_data:
             header, encoded = audio_data.split(",",1)
@@ -169,14 +186,18 @@ def complaint():
                 f.write(base64.b64decode(encoded))
             data["audio"] = filepath
 
+        # SAVE
         save_to_excel(data)
+
+        # 🔥 NEW FEATURES
         send_alert_email(data)
+        send_to_google_sheet(data)
 
         return jsonify({"status":"success","id":complaint_id})
 
     return render_template("complaint.html")
 
-# 📊 ADMIN PANEL (🔥 24 HOURS FILTER)
+# ================= ADMIN =================
 @app.route('/admin')
 def admin():
     if not session.get('admin'):
@@ -192,7 +213,6 @@ def admin():
     for row in ws.iter_rows(min_row=2, values_only=True):
         try:
             row_time = datetime.strptime(row[14], "%Y-%m-%d %H:%M:%S")
-
             if row_time >= last_24:
                 data.append({
                     "complaint_id": row[1],
@@ -208,7 +228,7 @@ def admin():
 
     return render_template("admin.html", data=data)
 
-# 🔍 TRACK
+# ================= TRACK =================
 @app.route('/track', methods=['GET','POST'])
 def track():
     data = None
@@ -226,7 +246,7 @@ def track():
 
     return render_template("track.html", data=data)
 
-# 📥 DOWNLOAD 24H DATA
+# ================= DOWNLOAD =================
 @app.route('/download_excel')
 def download_excel():
     try:
@@ -236,7 +256,6 @@ def download_excel():
         new_wb = Workbook()
         new_ws = new_wb.active
 
-        # header
         new_ws.append([cell.value for cell in ws[1]])
 
         now = datetime.now()
@@ -245,20 +264,19 @@ def download_excel():
         for row in ws.iter_rows(min_row=2, values_only=True):
             try:
                 row_time = datetime.strptime(row[14], "%Y-%m-%d %H:%M:%S")
-
                 if row_time >= last_24:
                     new_ws.append(row)
             except:
                 continue
 
-        temp_file = "/tmp/last24h.xlsx"
-        new_wb.save(temp_file)
+        file_path = "/tmp/last24h.xlsx"
+        new_wb.save(file_path)
 
-        return send_file(temp_file, as_attachment=True)
+        return send_file(file_path, as_attachment=True)
 
     except Exception as e:
         print("❌ DOWNLOAD ERROR:", e)
-        return "Download error"
+        return "Error"
 
 # ================= RUN =================
 if __name__ == "__main__":
