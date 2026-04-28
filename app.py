@@ -11,7 +11,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
-import requests   # ✅ NEW
+import requests
 
 # ================= INIT =================
 load_dotenv()
@@ -28,6 +28,7 @@ ADMIN_PASS = "237237chakde"
 # ================= GOOGLE SHEET URL =================
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwULvlFiZY8fpezE-lVzA0MRMtLysDlzzQM_GJ2GjhE7Zb33EE7N2-MA_4gUSTBQvetDg/exec"
 
+# ================= SEND =================
 def send_to_google_sheet(data):
     try:
         payload = {
@@ -43,7 +44,16 @@ def send_to_google_sheet(data):
     except Exception as e:
         print("❌ Google Sheet error:", e)
 
-# ================= EMAIL CONFIG =================
+# 🔥 NEW: READ FROM GOOGLE SHEET
+def get_sheet_data():
+    try:
+        res = requests.get(GOOGLE_SCRIPT_URL)
+        return res.json()
+    except Exception as e:
+        print("❌ Sheet Fetch Error:", e)
+        return []
+
+# ================= EMAIL =================
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
 
@@ -68,7 +78,6 @@ Complaint:
 """
         msg.attach(MIMEText(body, 'plain'))
 
-        # AUDIO ATTACH
         if data.get("audio") and os.path.exists(data["audio"]):
             with open(data["audio"], "rb") as f:
                 part = MIMEBase('application', 'octet-stream')
@@ -177,7 +186,6 @@ def complaint():
             "audio": ""
         }
 
-        # AUDIO
         audio_data = request.form.get("audio_data")
         if audio_data and "," in audio_data:
             header, encoded = audio_data.split(",",1)
@@ -186,10 +194,8 @@ def complaint():
                 f.write(base64.b64decode(encoded))
             data["audio"] = filepath
 
-        # SAVE
         save_to_excel(data)
 
-        # 🔥 NEW FEATURES
         send_alert_email(data)
         send_to_google_sheet(data)
 
@@ -203,28 +209,8 @@ def admin():
     if not session.get('admin'):
         return redirect("/login")
 
-    wb = load_workbook(EXCEL_FILE)
-    ws = wb.active
-
-    data = []
-    now = datetime.now()
-    last_24 = now - timedelta(hours=24)
-
-    for row in ws.iter_rows(min_row=2, values_only=True):
-        try:
-            row_time = datetime.strptime(row[14], "%Y-%m-%d %H:%M:%S")
-            if row_time >= last_24:
-                data.append({
-                    "complaint_id": row[1],
-                    "name": row[2],
-                    "complaint": row[9],
-                    "category": row[10],
-                    "subcategory": row[11],
-                    "reply": row[12],
-                    "audio": row[13]
-                })
-        except:
-            continue
+    # 🔥 CHANGE: GOOGLE SHEET DATA
+    data = get_sheet_data()
 
     return render_template("admin.html", data=data)
 
@@ -236,11 +222,11 @@ def track():
     if request.method == 'POST':
         cid = request.form.get("complaint_id")
 
-        wb = load_workbook(EXCEL_FILE)
-        ws = wb.active
+        # 🔥 CHANGE: SEARCH IN GOOGLE SHEET
+        sheet_data = get_sheet_data()
 
-        for row in ws.iter_rows(min_row=2, values_only=True):
-            if str(row[1]) == cid:
+        for row in sheet_data:
+            if row.get("Complaint ID") == cid:
                 data = row
                 break
 
