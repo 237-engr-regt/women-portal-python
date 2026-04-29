@@ -6,13 +6,7 @@ import base64
 from openpyxl import Workbook, load_workbook
 from threading import Lock
 from datetime import datetime, timedelta
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
 import requests
-import threading
 
 # ================= INIT =================
 load_dotenv()
@@ -20,20 +14,49 @@ load_dotenv()
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.getenv("SECRET_KEY", "secret123")
 
-print("🔥 FINAL FIXED SYSTEM RUNNING")
+print("🔥 RESEND EMAIL SYSTEM RUNNING")
 
-# ================= ADMIN LOGIN =================
+# ================= ADMIN =================
 ADMIN_USER = "237engrregt"
 ADMIN_PASS = "237237chakde"
 
-# ================= GOOGLE SHEET (FIXED URL) =================
+# ================= GOOGLE SHEET =================
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtSOOx9UhWgGqDg4YOpSsKZSsms-mQhOgeqqzamtobCwzRaexB_iHn0sGdUZnTH6BC9Q/exec"
 
-# ================= EMAIL CONFIG =================
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASS = os.getenv("SMTP_PASS")
+# ================= EMAIL (RESEND) =================
+def send_alert_email(data):
+    try:
+        api_key = os.getenv("RESEND_API_KEY")
 
-# ================= SEND TO SHEET =================
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "from": "onboarding@resend.dev",
+                "to": ["237engrregt@gmail.com"],
+                "subject": f"🚨 New Complaint {data['complaint_id']}",
+                "html": f"""
+                <h3>New Complaint Received</h3>
+                <p><b>ID:</b> {data['complaint_id']}</p>
+                <p><b>Name:</b> {data['name']}</p>
+                <p><b>Contact:</b> {data['contact']}</p>
+                <p><b>Category:</b> {data['category']}</p>
+                <p><b>Subcategory:</b> {data['subcategory']}</p>
+                <p><b>Complaint:</b> {data['complaint']}</p>
+                """
+            }
+        )
+
+        print("📧 RESEND STATUS:", response.status_code)
+        print("📧 RESEND RESPONSE:", response.text)
+
+    except Exception as e:
+        print("❌ RESEND ERROR:", e)
+
+# ================= GOOGLE SHEET =================
 def send_to_google_sheet(data):
     try:
         payload = {
@@ -45,65 +68,13 @@ def send_to_google_sheet(data):
             "subcategory": data["subcategory"]
         }
 
-        requests.post(GOOGLE_SCRIPT_URL, data=payload, timeout=10)
+        res = requests.post(GOOGLE_SCRIPT_URL, data=payload, timeout=10)
+        print("📊 SHEET STATUS:", res.status_code)
 
     except Exception as e:
-        print("❌ Sheet Error:", e)
+        print("❌ SHEET ERROR:", e)
 
-# ================= EMAIL FUNCTION =================
-def send_alert_email(data):
-    try:
-        msg = MIMEMultipart()
-        msg['Subject'] = f"🚨 New Complaint: {data['complaint_id']}"
-        msg['From'] = SMTP_USER
-        msg['To'] = SMTP_USER
-
-        body = f"""
-New Complaint
-
-ID: {data['complaint_id']}
-Name: {data['name']}
-Contact: {data['contact']}
-Category: {data['category']}
-Subcategory: {data['subcategory']}
-
-Complaint:
-{data['complaint']}
-"""
-        msg.attach(MIMEText(body, 'plain'))
-
-        # Attach audio if exists
-        if data.get("audio") and os.path.exists(data["audio"]):
-            with open(data["audio"], "rb") as f:
-                part = MIMEBase('application', 'octet-stream')
-                part.set_payload(f.read())
-
-            encoders.encode_base64(part)
-            part.add_header(
-                'Content-Disposition',
-                f'attachment; filename={os.path.basename(data["audio"])}'
-            )
-            msg.attach(part)
-
-        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.send_message(msg)
-        server.quit()
-
-        print("✅ Email Sent")
-
-    except Exception as e:
-        print("❌ Email Error:", e)
-
-# ================= ASYNC EMAIL =================
-def send_email_async(data):
-    try:
-        send_alert_email(data)
-    except Exception as e:
-        print("Async Email Error:", e)
-
-# ================= FILE PATH =================
+# ================= FILE =================
 UPLOAD_FOLDER = "/tmp/audio_files"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
@@ -203,8 +174,8 @@ def complaint():
             # SAVE
             save_to_excel(data)
 
-            # EMAIL (ASYNC)
-            threading.Thread(target=send_email_async, args=(data,)).start()
+            # EMAIL
+            send_alert_email(data)
 
             # GOOGLE SHEET
             send_to_google_sheet(data)
