@@ -28,6 +28,18 @@ def send_alert_email(data):
     try:
         api_key = os.getenv("RESEND_API_KEY")
 
+        attachments = []
+
+        # 🔥 AUDIO ATTACHMENT ADD
+        if data.get("audio") and os.path.exists(data["audio"]):
+            with open(data["audio"], "rb") as f:
+                encoded_file = base64.b64encode(f.read()).decode()
+
+            attachments.append({
+                "filename": os.path.basename(data["audio"]),
+                "content": encoded_file
+            })
+
         response = requests.post(
             "https://api.resend.com/emails",
             headers={
@@ -46,7 +58,8 @@ def send_alert_email(data):
                 <p><b>Category:</b> {data['category']}</p>
                 <p><b>Subcategory:</b> {data['subcategory']}</p>
                 <p><b>Complaint:</b> {data['complaint']}</p>
-                """
+                """,
+                "attachments": attachments
             }
         )
 
@@ -131,7 +144,7 @@ def login():
         if request.form.get("username") == ADMIN_USER and request.form.get("password") == ADMIN_PASS:
             session['admin'] = True
             return redirect("/admin")
-        return "❌ Wrong credentials"
+        return render_template("login.html", error="❌ Wrong credentials")  # 🔥 FIX
     return render_template("login.html")
 
 @app.route('/logout')
