@@ -12,6 +12,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 import requests
+import threading
 
 # ================= INIT =================
 load_dotenv()
@@ -19,7 +20,7 @@ load_dotenv()
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = os.getenv("SECRET_KEY", "secret123")
 
-print("🔥 FINAL SYSTEM WITH GOOGLE SHEET + EMAIL RUNNING")
+print("🔥 FINAL FIXED SYSTEM RUNNING")
 
 # ================= ADMIN LOGIN =================
 ADMIN_USER = "237engrregt"
@@ -27,6 +28,10 @@ ADMIN_PASS = "237237chakde"
 
 # ================= GOOGLE SHEET =================
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9YUvCpKgwBrFiMfi3aFYBCCsnFavoc88OWFlgsBKjPL5df29dn0WrARbstL4hTXwRzg/exec"
+
+# ================= EMAIL CONFIG =================
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASS = os.getenv("SMTP_PASS")
 
 # ================= SEND TO SHEET =================
 def send_to_google_sheet(data):
@@ -40,27 +45,12 @@ def send_to_google_sheet(data):
             "subcategory": data["subcategory"]
         }
 
-        # 🔥 FIX HERE
-        res = requests.post(GOOGLE_SCRIPT_URL, data=payload, timeout=10)
-
-        print("📡 Sheet Response:", res.text)
+        requests.post(GOOGLE_SCRIPT_URL, data=payload, timeout=10)
 
     except Exception as e:
-        print("❌ Google Sheet error:", e)
+        print("❌ Sheet Error:", e)
 
-# ================= GET FROM SHEET =================
-def get_sheet_data():
-    try:
-        res = requests.get(GOOGLE_SCRIPT_URL)
-        return res.json()
-    except Exception as e:
-        print("❌ Sheet Fetch Error:", e)
-        return []
-
-# ================= EMAIL =================
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASS = os.getenv("SMTP_PASS")
-
+# ================= EMAIL FUNCTION =================
 def send_alert_email(data):
     try:
         msg = MIMEMultipart()
@@ -69,9 +59,9 @@ def send_alert_email(data):
         msg['To'] = SMTP_USER
 
         body = f"""
-🚨 New Complaint Received
+New Complaint
 
-Complaint ID: {data['complaint_id']}
+ID: {data['complaint_id']}
 Name: {data['name']}
 Contact: {data['contact']}
 Category: {data['category']}
@@ -82,7 +72,7 @@ Complaint:
 """
         msg.attach(MIMEText(body, 'plain'))
 
-        # AUDIO ATTACH
+        # Attach audio if exists
         if data.get("audio") and os.path.exists(data["audio"]):
             with open(data["audio"], "rb") as f:
                 part = MIMEBase('application', 'octet-stream')
@@ -95,16 +85,24 @@ Complaint:
             )
             msg.attach(part)
 
-        server = smtplib.SMTP("smtp.gmail.com", 587)
+        # ✅ FIXED SMTP
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
         server.send_message(msg)
         server.quit()
 
-        print("✅ EMAIL SENT")
+        print("✅ Email Sent")
 
     except Exception as e:
-        print("❌ EMAIL ERROR:", e)
+        print("❌ Email Error:", e)
+
+# ================= ASYNC EMAIL =================
+def send_email_async(data):
+    try:
+        send_alert_email(data)
+    except Exception as e:
+        print("Async Email Error:", e)
 
 # ================= FILE PATH =================
 UPLOAD_FOLDER = "/tmp/audio_files"
@@ -203,11 +201,11 @@ def complaint():
                     f.write(base64.b64decode(encoded))
                 data["audio"] = filepath
 
-            # SAVE LOCAL
+            # SAVE
             save_to_excel(data)
 
-            # EMAIL
-            send_alert_email(data)
+            # EMAIL (ASYNC ✅)
+            threading.Thread(target=send_email_async, args=(data,)).start()
 
             # GOOGLE SHEET
             send_to_google_sheet(data)
@@ -216,7 +214,7 @@ def complaint():
 
         except Exception as e:
             print("❌ MAIN ERROR:", e)
-            return jsonify({"status":"error"})
+            return jsonify({"status":"error","message":str(e)})
 
     return render_template("complaint.html")
 
@@ -226,7 +224,13 @@ def admin():
     if not session.get('admin'):
         return redirect("/login")
 
-    data = get_sheet_data()
+    data = []
+    try:
+        res = requests.get(GOOGLE_SCRIPT_URL, timeout=10)
+        data = res.json()
+    except:
+        pass
+
     return render_template("admin.html", data=data)
 
 # ================= TRACK =================
@@ -236,12 +240,17 @@ def track():
 
     if request.method == 'POST':
         cid = request.form.get("complaint_id")
-        sheet_data = get_sheet_data()
 
-        for row in sheet_data[1:]:
-            if row[0] == cid:
-                result = row
-                break
+        try:
+            res = requests.get(GOOGLE_SCRIPT_URL, timeout=10)
+            sheet_data = res.json()
+
+            for row in sheet_data[1:]:
+                if row[0] == cid:
+                    result = row
+                    break
+        except:
+            pass
 
     return render_template("track.html", result=result)
 
