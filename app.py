@@ -26,8 +26,8 @@ print("🔥 FINAL FIXED SYSTEM RUNNING")
 ADMIN_USER = "237engrregt"
 ADMIN_PASS = "237237chakde"
 
-# ================= GOOGLE SHEET =================
-GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx9YUvCpKgwBrFiMfi3aFYBCCsnFavoc88OWFlgsBKjPL5df29dn0WrARbstL4hTXwRzg/exec"
+# ================= GOOGLE SHEET (FIXED URL) =================
+GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtSOOx9UhWgGqDg4YOpSsKZSsms-mQhOgeqqzamtobCwzRaexB_iHn0sGdUZnTH6BC9Q/exec"
 
 # ================= EMAIL CONFIG =================
 SMTP_USER = os.getenv("SMTP_USER")
@@ -85,7 +85,6 @@ Complaint:
             )
             msg.attach(part)
 
-        # ✅ FIXED SMTP
         server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
@@ -204,7 +203,7 @@ def complaint():
             # SAVE
             save_to_excel(data)
 
-            # EMAIL (ASYNC ✅)
+            # EMAIL (ASYNC)
             threading.Thread(target=send_email_async, args=(data,)).start()
 
             # GOOGLE SHEET
