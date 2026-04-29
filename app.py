@@ -8,12 +8,6 @@ from threading import Lock
 from datetime import datetime, timedelta
 import requests
 
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.base import MIMEBase
-from email import encoders
-
 # ================= INIT =================
 load_dotenv()
 
@@ -64,39 +58,6 @@ def send_alert_email(data):
 
     except Exception as e:
         print("❌ RESEND ERROR:", e)
-
-# ================= GMAIL =================
-def send_fallback_gmail(data):
-    try:
-        user = os.getenv("SMTP_USER")
-        password = os.getenv("SMTP_PASS")
-
-        msg = MIMEMultipart()
-        msg["From"] = user
-        msg["To"] = user
-        msg["Subject"] = f"Complaint {data['complaint_id']}"
-
-        msg.attach(MIMEText(data["complaint"], "plain"))
-
-        if data.get("audio") and os.path.exists(data["audio"]):
-            part = MIMEBase('application', 'octet-stream')
-            with open(data["audio"], "rb") as f:
-                part.set_payload(f.read())
-            encoders.encode_base64(part)
-            part.add_header('Content-Disposition',
-                            f'attachment; filename="{os.path.basename(data["audio"])}"')
-            msg.attach(part)
-
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()
-        server.login(user, password)
-        server.send_message(msg)
-        server.quit()
-
-        print("📧 GMAIL SENT")
-
-    except Exception as e:
-        print("❌ GMAIL ERROR:", e)
 
 # ================= GOOGLE SHEET =================
 def send_to_google_sheet(data):
@@ -215,16 +176,11 @@ def complaint():
 
             save_to_excel(data)
 
-            # 🔥 FINAL FIX (CRASH PROOF)
+            # 🔥 ONLY WORKING CALLS
             try:
                 send_alert_email(data)
             except Exception as e:
                 print("EMAIL ERROR:", e)
-
-            try:
-                send_fallback_gmail(data)
-            except Exception as e:
-                print("GMAIL ERROR:", e)
 
             try:
                 send_to_google_sheet(data)
