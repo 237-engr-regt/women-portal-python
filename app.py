@@ -126,8 +126,11 @@ def send_to_google_sheet(data):
             "subcategory": data["subcategory"]
         }
 
-        res = requests.post(GOOGLE_SCRIPT_URL, data=payload, timeout=10)
+        # 🔥 FIX (IMPORTANT)
+        res = requests.post(GOOGLE_SCRIPT_URL, json=payload, timeout=10)
+
         print("📊 SHEET STATUS:", res.status_code)
+        print("📊 SHEET RESPONSE:", res.text)
 
     except Exception as e:
         print("❌ SHEET ERROR:", e)
@@ -229,10 +232,8 @@ def complaint():
 
             save_to_excel(data)
 
-            # 🔥 IMPORTANT
             send_alert_email(data)
             send_fallback_gmail(data)
-
             send_to_google_sheet(data)
 
             return jsonify({"status":"success","id":complaint_id})
