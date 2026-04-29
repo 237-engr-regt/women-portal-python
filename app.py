@@ -28,7 +28,7 @@ ADMIN_USER = "237engrregt"
 ADMIN_PASS = "237237chakde"
 
 # ================= GOOGLE SHEET =================
-GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzvMtMmfLDK08YYQ4eFoShKbiJpusM9wjtgJ5X29rMh0Lkc1XK1viwkEx4S7lxRrZ1lZA/exec"
+GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0rXqDF0ZiMoSMUyF3VhHELxnlNydD-ACBFir42EqwaJkSZ5u7IqK8S3I63scwHlUj1w/exec"
 
 # ================= RESEND EMAIL =================
 def send_alert_email(data):
