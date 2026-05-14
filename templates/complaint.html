@@ -431,15 +431,28 @@ function submitEmergency(){
         return;
     }
 
+    // ✅ SUCCESS MESSAGE
     alert(
         "Emergency Request Submitted Successfully!\n\n" +
         "Name: " + name + "\n" +
         "Phone: " + phone
     );
 
+    // ❌ CLOSE POPUP
     document.getElementById("emergencyPopup").remove();
 
-    // 📞 AUTO CALL
+    // 📲 WHATSAPP MESSAGE
+    let message =
+    "🚨 EMERGENCY REQUEST 🚨%0A%0A" +
+    "Name: " + name + "%0A" +
+    "Phone: " + phone;
+
+    window.open(
+        "https://wa.me/916239103850?text=" + message,
+        "_blank"
+    );
+
+    // 📞 OPEN CALL SCREEN
     window.location.href = "tel:6239103850";
 }
 
