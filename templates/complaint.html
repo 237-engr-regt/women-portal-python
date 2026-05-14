@@ -1,23 +1,198 @@
 <!DOCTYPE html>
 <html>
 <head>
+
     <title>Sahara Portal</title>
+
     <link rel="stylesheet" href="/static/style.css">
 
+    <!-- SIMPLE OFFICIAL FONT -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
     <style>
+
+        *{
+            font-family:'Poppins', sans-serif;
+        }
+
+        body{
+            background:#eef2ef;
+            margin:0;
+        }
 
         .navbar{
             background:#2e5d46;
             color:white;
             text-align:center;
+            padding:18px;
+            font-size:32px;
+            font-weight:600;
+            box-shadow:0 2px 10px rgba(0,0,0,0.15);
+        }
+
+        .container{
+            width:90%;
+            max-width:1000px;
+            margin:auto;
             padding:20px;
-            font-size:36px;
-            font-weight:bold;
+        }
+
+        h1{
+            color:#1f1f1f;
+        }
+
+        .subtitle{
+            color:#5b5b5b;
+            margin-bottom:20px;
+        }
+
+        .notice{
+            background:#e8f1e8;
+            padding:15px;
+            border-radius:12px;
+            margin-bottom:25px;
+            text-align:center;
+            border:1px solid #c9ddc9;
+        }
+
+        .card{
+            background:white;
+            padding:25px;
+            border-radius:16px;
+            margin-bottom:25px;
+            box-shadow:0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .card h3{
+            color:#2e5d46;
+            margin-bottom:20px;
+        }
+
+        input, textarea{
+            width:100%;
+            padding:14px;
+            margin-bottom:14px;
+            border-radius:10px;
+            border:1px solid #ccc;
+            font-size:15px;
+            box-sizing:border-box;
+        }
+
+        textarea{
+            height:120px;
+            resize:none;
+        }
+
+        .grid{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:15px;
+        }
+
+        .box{
+            background:#f7f7f7;
+            border:1px solid #ddd;
+            border-radius:14px;
+            padding:18px;
+            text-align:center;
+            cursor:pointer;
+            transition:0.3s;
+            font-size:16px;
+            font-weight:500;
+        }
+
+        .box:hover{
+            background:#e8f1ec;
+            transform:scale(1.02);
+        }
+
+        .box.active{
+            background:#2e5d46;
+            color:white;
+            border:none;
+        }
+
+        /* SUBCATEGORY */
+        .sub-box{
+            background:#f5f5f5;
+            padding:12px;
+            border-radius:10px;
+            margin-bottom:10px;
+            cursor:pointer;
+            border:1px solid #ddd;
+            transition:0.3s;
+            font-size:14px;
+        }
+
+        .sub-box:hover{
+            background:#e6efe9;
+        }
+
+        .sub-box.active{
+            background:#2e5d46;
+            color:white;
+            border:none;
+        }
+
+        .audio-controls{
+            display:flex;
+            gap:10px;
+        }
+
+        .record{
+            background:green;
+            color:white;
+            border:none;
+            padding:12px 18px;
+            border-radius:10px;
+            cursor:pointer;
+            font-size:15px;
+        }
+
+        .stop{
+            background:#d62828;
+            color:white;
+            border:none;
+            padding:12px 18px;
+            border-radius:10px;
+            cursor:pointer;
+            font-size:15px;
+        }
+
+        .emergency{
+            width:100%;
+            background:#d9534f;
+            color:white;
+            border:none;
+            padding:16px;
+            border-radius:12px;
+            font-size:18px;
+            font-weight:600;
+            cursor:pointer;
+            margin-bottom:15px;
+        }
+
+        .submit{
+            width:100%;
+            background:#2e5d46;
+            color:white;
+            border:none;
+            padding:16px;
+            border-radius:12px;
+            font-size:18px;
+            font-weight:600;
+            cursor:pointer;
+        }
+
+        .submit:hover,
+        .emergency:hover{
+            opacity:0.92;
         }
 
     </style>
 
 </head>
+
 <body>
 
 <div class="navbar">
@@ -53,11 +228,7 @@
 
         <input type="text" name="address" placeholder="Address">
 
-        <!-- ✅ EMAIL REMOVED -->
-
         <input type="text" name="unit" placeholder="Unit (optional)">
-
-        <!-- ✅ QUARTER REMOVED -->
 
     </div>
 
@@ -86,12 +257,10 @@
 
         </div>
 
-        <!-- hidden -->
         <input type="hidden" name="category" id="category">
 
         <input type="hidden" name="subcategory" id="subcategory">
 
-        <!-- 🔥 SUBCATEGORY AREA -->
         <div id="subcategoryBox" style="margin-top:15px;"></div>
 
     </div>
@@ -164,20 +333,29 @@
 
 <script>
 
-// 🚨 Emergency
+// 🚨 EMERGENCY
 function showContacts() {
 
+    let name = prompt(
+        "We will try to resolve your emergency at the earliest.\n\nEnter Your Name:"
+    );
+
+    if(name == null || name == ""){
+        return;
+    }
+
+    let phone = prompt(
+        "Enter Your Phone Number:"
+    );
+
+    if(phone == null || phone == ""){
+        return;
+    }
+
     alert(
-
-        "Emergency Contacts:\n\n" +
-
-        "1. CO: 12XX00XX34\n" +
-
-        "2. ADJT: 56XX00XX78\n" +
-
-        "3. QM: 94XX00XX37\n" +
-
-        "4. SM: 64XX00XX37"
+        "Emergency Request Submitted Successfully!\n\n" +
+        "Name: " + name + "\n" +
+        "Phone: " + phone
     );
 }
 
@@ -185,51 +363,35 @@ function showContacts() {
 const subcategories = {
 
     ration: [
-
         "Non-availability of ration",
-
         "Poor quality",
-
         "Delayed supply",
-
         "CSD issue"
     ],
 
     accommodation: [
-
         "Water supply",
-
         "Electricity",
-
         "Repairs",
-
         "Sanitation issue"
     ],
 
     welfare: [
-
         "Family issues",
-
         "Financial stress",
-
         "Counselling request",
-
         "Children education"
     ],
 
     safety: [
-
         "Harassment",
-
         "Security safety",
-
         "Domestic safety",
-
         "Neighbour disputes"
     ]
 };
 
-// ✅ CATEGORY SELECT
+// CATEGORY
 function selectCategory(e, cat) {
 
     document.getElementById("category").value = cat;
@@ -254,7 +416,7 @@ function selectCategory(e, cat) {
     document.getElementById("subcategoryBox").innerHTML = html;
 }
 
-// ✅ SUBCATEGORY SELECT
+// SUBCATEGORY
 function selectSubcategory(value, el) {
 
     document.getElementById("subcategory").value = value;
@@ -265,9 +427,8 @@ function selectSubcategory(value, el) {
     el.classList.add("active");
 }
 
-// 🎤 AUDIO
+// AUDIO
 let mediaRecorder;
-
 let audioChunks = [];
 
 async function startRecording() {
@@ -323,7 +484,7 @@ function stopRecording() {
     }
 }
 
-// ✅ SUBMIT
+// SUBMIT
 document.getElementById("complaintForm")
 .addEventListener("submit", function(e){
 
