@@ -362,6 +362,7 @@ function showContacts() {
                 margin-top:0;
                 color:#b22222;
                 text-align:center;
+                font-size:36px;
             ">
                 🚨 Emergency Support
             </h2>
@@ -369,13 +370,14 @@ function showContacts() {
             <div style="
                 background:#fff3cd;
                 color:#856404;
-                padding:14px;
-                border-radius:10px;
-                margin-bottom:18px;
-                font-size:15px;
+                padding:16px;
+                border-radius:12px;
+                margin-bottom:20px;
+                font-size:18px;
                 font-weight:600;
                 border:1px solid #ffe69c;
-                line-height:1.6;
+                line-height:1.7;
+                text-align:center;
             ">
                 We will try to resolve your emergency at the earliest.
             </div>
@@ -397,9 +399,9 @@ function showContacts() {
                 background:#b22222;
                 color:white;
                 border:none;
-                padding:14px;
+                padding:15px;
                 border-radius:10px;
-                font-size:16px;
+                font-size:18px;
                 font-weight:600;
                 cursor:pointer;
             ">
@@ -414,7 +416,7 @@ function showContacts() {
     document.body.insertAdjacentHTML("beforeend", popup);
 }
 
-// SUBMIT EMERGENCY
+// 🚨 SUBMIT EMERGENCY
 function submitEmergency(){
 
     let name =
@@ -436,6 +438,9 @@ function submitEmergency(){
     );
 
     document.getElementById("emergencyPopup").remove();
+
+    // 📞 AUTO CALL
+    window.location.href = "tel:6239103850";
 }
 
 // 🔥 SUBCATEGORY DATA
