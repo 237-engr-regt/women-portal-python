@@ -3,15 +3,34 @@
 <head>
     <title>Sahara Portal</title>
     <link rel="stylesheet" href="/static/style.css">
+
+    <style>
+
+        .navbar{
+            background:#2e5d46;
+            color:white;
+            text-align:center;
+            padding:20px;
+            font-size:36px;
+            font-weight:bold;
+        }
+
+    </style>
+
 </head>
 <body>
 
-<div class="navbar">Sahara Portal</div>
+<div class="navbar">
+    Sahara Portal
+</div>
 
 <div class="container">
 
     <h1>Sahara Portal</h1>
-    <p class="subtitle">Welfare & grievance redressal platform for unit families</p>
+
+    <p class="subtitle">
+        Welfare & grievance redressal platform for unit families
+    </p>
 
     <div class="notice">
         All submissions can be made anonymously and will be handled with strict confidentiality.
@@ -23,60 +42,121 @@
 
     <!-- BASIC DETAILS -->
     <div class="card">
+
         <h3>Basic Details</h3>
+
         <input type="text" name="name" placeholder="Name" required>
+
         <input type="text" name="wo" placeholder="Husband Rank & Name">
+
         <input type="text" name="contact" placeholder="Contact Number" required>
+
         <input type="text" name="address" placeholder="Address">
 
-        <input type="email" name="email" placeholder="Email (optional)">
+        <!-- ✅ EMAIL REMOVED -->
+
         <input type="text" name="unit" placeholder="Unit (optional)">
-        <input type="text" name="quarter" placeholder="Quarter (optional)">
+
+        <!-- ✅ QUARTER REMOVED -->
+
     </div>
 
     <!-- CATEGORY -->
     <div class="card">
+
         <h3>Select Category</h3>
 
         <div class="grid">
-            <div class="box" onclick="selectCategory(event,'ration')">🍽️<br>Ration</div>
-            <div class="box" onclick="selectCategory(event,'accommodation')">🏠<br>Accommodation</div>
-            <div class="box" onclick="selectCategory(event,'welfare')">👨‍👩‍👧<br>Welfare</div>
-            <div class="box" onclick="selectCategory(event,'safety')">🛡️<br>Safety</div>
+
+            <div class="box" onclick="selectCategory(event,'ration')">
+                🍽️<br>Ration
+            </div>
+
+            <div class="box" onclick="selectCategory(event,'accommodation')">
+                🏠<br>Accommodation
+            </div>
+
+            <div class="box" onclick="selectCategory(event,'welfare')">
+                👨‍👩‍👧<br>Welfare
+            </div>
+
+            <div class="box" onclick="selectCategory(event,'safety')">
+                🛡️<br>Safety
+            </div>
+
         </div>
 
         <!-- hidden -->
         <input type="hidden" name="category" id="category">
+
         <input type="hidden" name="subcategory" id="subcategory">
 
         <!-- 🔥 SUBCATEGORY AREA -->
         <div id="subcategoryBox" style="margin-top:15px;"></div>
+
     </div>
 
     <!-- DESCRIPTION -->
     <div class="card">
+
         <h3>Describe Your Concern</h3>
 
-        <textarea name="complaint" placeholder="Write your issue here..." required></textarea>
+        <textarea
+        name="complaint"
+        placeholder="Write your issue here..."
+        required></textarea>
 
         <div class="audio-controls">
-            <button type="button" class="record" onclick="startRecording()">🎤 Record</button>
-            <button type="button" class="stop" onclick="stopRecording()">⏹ Stop</button>
+
+            <button
+            type="button"
+            class="record"
+            onclick="startRecording()">
+
+                🎤 Record
+
+            </button>
+
+            <button
+            type="button"
+            class="stop"
+            onclick="stopRecording()">
+
+                ⏹ Stop
+
+            </button>
+
         </div>
 
         <br>
+
         <audio id="audioPlayback" controls></audio>
 
-        <input type="hidden" id="audioData" name="audio_data">
+        <input
+        type="hidden"
+        id="audioData"
+        name="audio_data">
+
     </div>
 
     <!-- 🚨 EMERGENCY -->
-    <button type="button" class="emergency" onclick="showContacts()">
+    <button
+    type="button"
+    class="emergency"
+    onclick="showContacts()">
+
         🚨 Emergency
+
     </button>
 
     <!-- SUBMIT -->
-    <button type="submit" class="submit">Submit</button>
+    <button
+    type="submit"
+    class="submit">
+
+        Submit
+
+    </button>
 
     </form>
 
@@ -86,55 +166,86 @@
 
 // 🚨 Emergency
 function showContacts() {
+
     alert(
+
         "Emergency Contacts:\n\n" +
+
         "1. CO: 12XX00XX34\n" +
+
         "2. ADJT: 56XX00XX78\n" +
+
         "3. QM: 94XX00XX37\n" +
+
         "4. SM: 64XX00XX37"
     );
 }
 
 // 🔥 SUBCATEGORY DATA
 const subcategories = {
+
     ration: [
+
         "Non-availability of ration",
+
         "Poor quality",
+
         "Delayed supply",
+
         "CSD issue"
     ],
+
     accommodation: [
+
         "Water supply",
+
         "Electricity",
+
         "Repairs",
+
         "Sanitation issue"
     ],
+
     welfare: [
+
         "Family issues",
+
         "Financial stress",
+
         "Counselling request",
+
         "Children education"
     ],
+
     safety: [
+
         "Harassment",
+
         "Security safety",
+
         "Domestic safety",
+
         "Neighbour disputes"
     ]
 };
 
 // ✅ CATEGORY SELECT
 function selectCategory(e, cat) {
+
     document.getElementById("category").value = cat;
 
-    document.querySelectorAll(".box").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".box")
+    .forEach(b => b.classList.remove("active"));
+
     e.currentTarget.classList.add("active");
 
     let html = "";
 
     subcategories[cat].forEach(item => {
+
         html += `
-            <div class="sub-box" onclick="selectSubcategory('${item}', this)">
+            <div class="sub-box"
+            onclick="selectSubcategory('${item}', this)">
                 ${item}
             </div>
         `;
@@ -145,67 +256,105 @@ function selectCategory(e, cat) {
 
 // ✅ SUBCATEGORY SELECT
 function selectSubcategory(value, el) {
+
     document.getElementById("subcategory").value = value;
 
-    document.querySelectorAll(".sub-box").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".sub-box")
+    .forEach(b => b.classList.remove("active"));
+
     el.classList.add("active");
 }
 
 // 🎤 AUDIO
 let mediaRecorder;
+
 let audioChunks = [];
 
 async function startRecording() {
+
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        const stream =
+        await navigator.mediaDevices.getUserMedia({
+            audio: true
+        });
 
         mediaRecorder = new MediaRecorder(stream);
+
         audioChunks = [];
 
-        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+        mediaRecorder.ondataavailable =
+        e => audioChunks.push(e.data);
 
         mediaRecorder.onstop = () => {
-            const blob = new Blob(audioChunks, { type: 'audio/webm' });
 
-            document.getElementById("audioPlayback").src = URL.createObjectURL(blob);
+            const blob =
+            new Blob(audioChunks, {
+                type: 'audio/webm'
+            });
+
+            document.getElementById("audioPlayback").src =
+            URL.createObjectURL(blob);
 
             const reader = new FileReader();
+
             reader.readAsDataURL(blob);
+
             reader.onloadend = () => {
-                document.getElementById("audioData").value = reader.result;
+
+                document.getElementById("audioData").value =
+                reader.result;
             };
         };
 
         mediaRecorder.start();
 
     } catch (err) {
+
         alert("Mic permission allow karo!");
     }
 }
 
 function stopRecording() {
+
     if (mediaRecorder) {
+
         mediaRecorder.stop();
     }
 }
 
 // ✅ SUBMIT
-document.getElementById("complaintForm").addEventListener("submit", function(e){
+document.getElementById("complaintForm")
+.addEventListener("submit", function(e){
+
     e.preventDefault();
 
     let formData = new FormData(this);
 
     fetch("/complaint", {
+
         method: "POST",
+
         body: formData
+
     })
+
     .then(res => res.json())
+
     .then(data => {
-        alert("Complaint Submitted! ID: " + data.id);
+
+        alert(
+            "Complaint Submitted! ID: " + data.id
+        );
+
         this.reset();
+
         document.getElementById("audioPlayback").src = "";
+
         document.getElementById("subcategoryBox").innerHTML = "";
+
     })
+
     .catch(() => alert("Submission failed"));
 });
 
