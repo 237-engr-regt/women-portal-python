@@ -217,7 +217,11 @@ def complaint():
             send_alert_email(data)
             send_to_google_sheet(data)
 
-            return jsonify({"status":"success","id":complaint_id})
+            return jsonify({
+    "status": "success",
+    "id": complaint_id,
+    "redirect": "/"
+})
 
         except Exception as e:
             print("❌ MAIN ERROR:", e)

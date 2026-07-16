@@ -601,18 +601,20 @@ document.getElementById("complaintForm")
 
     .then(data => {
 
-        alert(
-            "Complaint Submitted! ID: " + data.id
-        );
+    alert("Complaint Submitted! ID: " + data.id);
 
-        this.reset();
+    this.reset();
 
-        document.getElementById("audioPlayback").src = "";
+    document.getElementById("audioPlayback").src = "";
 
-        document.getElementById("subcategoryBox").innerHTML = "";
+    document.getElementById("subcategoryBox").innerHTML = "";
 
-    })
+    // 2 second baad Home Page open hoga
+    setTimeout(function () {
+        window.location.href = data.redirect;
+    }, 2000);
 
+})
     .catch(() => alert("Submission failed"));
 });
 
