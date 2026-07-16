@@ -610,10 +610,10 @@ document.getElementById("complaintForm")
     document.getElementById("subcategoryBox").innerHTML = "";
 
     // 2 second baad Home Page open hoga
-    setTimeout(function () {
-        window.location.href = data.redirect;
-    }, 2000);
-
+    // 2 second baad Home Page open hoga
+setTimeout(function () {
+    window.location.href = "/";
+}, 2000);
 })
     .catch(() => alert("Submission failed"));
 });
