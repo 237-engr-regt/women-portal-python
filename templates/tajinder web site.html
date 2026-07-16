@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Sahara Portal</title>
+
+    <link rel="stylesheet" href="/static/style.css">
+
+    <!-- SIMPLE OFFICIAL FONT -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+
+        *{
+            font-family:'Poppins', sans-serif;
+        }
+
+        body{
+            background:#eef2ef;
+            margin:0;
+        }
+
+        .navbar{
+            background:#2e5d46;
+            color:white;
+            text-align:center;
+            padding:18px;
+            font-size:32px;
+            font-weight:600;
+            box-shadow:0 2px 10px rgba(0,0,0,0.15);
+        }
+
+        .container{
+            width:90%;
+            max-width:1000px;
+            margin:auto;
+            padding:20px;
+        }
+
+        h1{
+            color:#1f1f1f;
+        }
+
+        .subtitle{
+            color:#5b5b5b;
+            margin-bottom:20px;
+        }
+
+        .notice{
+            background:#e8f1e8;
+            padding:15px;
+            border-radius:12px;
+            margin-bottom:25px;
+            text-align:center;
+            border:1px solid #c9ddc9;
+        }
+
+        .card{
+            background:white;
+            padding:25px;
+            border-radius:16px;
+            margin-bottom:25px;
+            box-shadow:0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .card h3{
+            color:#2e5d46;
+            margin-bottom:20px;
+        }
+
+        input, textarea{
+            width:100%;
+            padding:14px;
+            margin-bottom:14px;
+            border-radius:10px;
+            border:1px solid #ccc;
+            font-size:15px;
+            box-sizing:border-box;
+        }
+
+        textarea{
+            height:120px;
+            resize:none;
+        }
+
+        .grid{
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            gap:15px;
+        }
+
+        .box{
+            background:#f7f7f7;
+            border:1px solid #ddd;
+            border-radius:14px;
+            padding:18px;
+            text-align:center;
+            cursor:pointer;
+            transition:0.3s;
+            font-size:16px;
+            font-weight:500;
+        }
+
+        .box:hover{
+            background:#e8f1ec;
+            transform:scale(1.02);
+        }
+
+        .box.active{
+            background:#2e5d46;
+            color:white;
+            border:none;
+        }
+
+        .sub-box{
+            background:#f5f5f5;
+            padding:12px;
+            border-radius:10px;
+            margin-bottom:10px;
+            cursor:pointer;
+            border:1px solid #ddd;
+            transition:0.3s;
+            font-size:14px;
+        }
+
+        .sub-box:hover{
+            background:#e6efe9;
+        }
+
+        .sub-box.active{
+            background:#2e5d46;
+            color:white;
+            border:none;
+        }
+
+        .audio-controls{
+            display:flex;
+            gap:10px;
+        }
+
+        .record{
+            background:green;
+            color:white;
+            border:none;
+            padding:12px 18px;
+            border-radius:10px;
+            cursor:pointer;
+            font-size:15px;
+        }
+
+        .stop{
+            background:#d62828;
+            color:white;
+            border:none;
+            padding:12px 18px;
+            border-radius:10px;
+            cursor:pointer;
+            font-size:15px;
+        }
+
+        .emergency{
+            width:100%;
+            background:#d9534f;
+            color:white;
+            border:none;
+            padding:16px;
+            border-radius:12px;
+            font-size:18px;
+            font-weight:600;
+            cursor:pointer;
+            margin-bottom:15px;
+        }
+
+        .submit{
+            width:100%;
+            background:#2e5d46;
+            color:white;
+            border:none;
+            padding:16px;
+            border-radius:12px;
+            font-size:18px;
+            font-weight:600;
+            cursor:pointer;
+        }
+
+        .submit:hover,
+        .emergency:hover{
+            opacity:0.92;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="navbar">
+    Sahara Portal
+</div>
+
+<div class="container">
+
+    <h1>Sahara Portal</h1>
+
+    <p class="subtitle">
+        Welfare & grievance redressal platform for unit families
+    </p>
+
+    <div class="notice">
+        All submissions can be made anonymously and will be handled with strict confidentiality.
+    </div>
+
+    <audio id="alertSound" src="/static/alert.mp3"></audio>
+
+    <form id="complaintForm">
+
+    <!-- BASIC DETAILS -->
+    <div class="card">
+
+        <h3>Basic Details</h3>
+
+        <input type="text" name="name" placeholder="Name" required>
+
+        <input type="text" name="wo" placeholder="Husband Rank & Name">
+
+        <input type="text" name="contact" placeholder="Contact Number" required>
+
+        <input type="text" name="address" placeholder="Address">
+
+        <input type="text" name="unit" placeholder="Unit (optional)">
+
+    </div>
+
+    <!-- CATEGORY -->
+    <div class="card">
+
+        <h3>Select Category</h3>
+
+        <div class="grid">
+
+            <div class="box" onclick="selectCategory(event,'ration')">
+                🍽️<br>Ration
+            </div>
+
+            <div class="box" onclick="selectCategory(event,'accommodation')">
+                🏠<br>Accommodation
+            </div>
+
+            <div class="box" onclick="selectCategory(event,'welfare')">
+                👨‍👩‍👧<br>Welfare
+            </div>
+
+            <div class="box" onclick="selectCategory(event,'safety')">
+                🛡️<br>Safety
+            </div>
+
+        </div>
+
+        <input type="hidden" name="category" id="category">
+
+        <input type="hidden" name="subcategory" id="subcategory">
+
+        <div id="subcategoryBox" style="margin-top:15px;"></div>
+
+    </div>
+
+    <!-- DESCRIPTION -->
+    <div class="card">
+
+        <h3>Describe Your Concern</h3>
+
+        <textarea
+        name="complaint"
+        placeholder="Write your issue here..."
+        required></textarea>
+
+        <div class="audio-controls">
+
+            <button
+            type="button"
+            class="record"
+            onclick="startRecording()">
+
+                🎤 Record
+
+            </button>
+
+            <button
+            type="button"
+            class="stop"
+            onclick="stopRecording()">
+
+                ⏹ Stop
+
+            </button>
+
+        </div>
+
+        <br>
+
+        <audio id="audioPlayback" controls></audio>
+
+        <input
+        type="hidden"
+        id="audioData"
+        name="audio_data">
+
+    </div>
+
+    <!-- 🚨 EMERGENCY -->
+    <button
+    type="button"
+    class="emergency"
+    onclick="showContacts()">
+
+        🚨 Emergency
+
+    </button>
+
+    <!-- SUBMIT -->
+    <button
+    type="submit"
+    class="submit">
+
+        Submit
+
+    </button>
+
+    </form>
+
+</div>
+
+<script>
+
+// 🚨 EMERGENCY POPUP
+function showContacts() {
+
+    let popup = `
+    
+    <div id="emergencyPopup" style="
+        position:fixed;
+        top:0;
+        left:0;
+        width:100%;
+        height:100%;
+        background:rgba(0,0,0,0.45);
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        z-index:9999;
+    ">
+
+        <div style="
+            background:white;
+            width:420px;
+            padding:25px;
+            border-radius:16px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.2);
+        ">
+
+            <h2 style="
+                margin-top:0;
+                color:#b22222;
+                text-align:center;
+                font-size:36px;
+            ">
+                🚨 Emergency Support
+            </h2>
+
+            <div style="
+                background:#fff3cd;
+                color:#856404;
+                padding:16px;
+                border-radius:12px;
+                margin-bottom:20px;
+                font-size:18px;
+                font-weight:600;
+                border:1px solid #ffe69c;
+                line-height:1.7;
+                text-align:center;
+            ">
+                We will try to resolve your emergency at the earliest.
+            </div>
+
+            <input
+            type="text"
+            id="emergencyName"
+            placeholder="Enter Your Name">
+
+            <input
+            type="text"
+            id="emergencyPhone"
+            placeholder="Enter Phone Number">
+
+            <button
+            onclick="submitEmergency()"
+            style="
+                width:100%;
+                background:#b22222;
+                color:white;
+                border:none;
+                padding:15px;
+                border-radius:10px;
+                font-size:18px;
+                font-weight:600;
+                cursor:pointer;
+            ">
+                Submit
+            </button>
+
+        </div>
+
+    </div>
+    `;
+
+    document.body.insertAdjacentHTML("beforeend", popup);
+}
+
+// 🚨 SUBMIT EMERGENCY
+function submitEmergency(){
+
+    let name =
+    document.getElementById("emergencyName").value;
+
+    let phone =
+    document.getElementById("emergencyPhone").value;
+
+    if(name == "" || phone == ""){
+
+        alert("Please fill all details");
+        return;
+    }
+
+    // ✅ SUCCESS MESSAGE
+    alert(
+        "Emergency Request Submitted Successfully!\n\n" +
+        "Name: " + name + "\n" +
+        "Phone: " + phone
+    );
+
+    // ❌ CLOSE POPUP
+    document.getElementById("emergencyPopup").remove();
+
+    // 📲 WHATSAPP MESSAGE
+    let message =
+    "🚨 EMERGENCY REQUEST 🚨%0A%0A" +
+    "Name: " + name + "%0A" +
+    "Phone: " + phone;
+
+    window.open(
+        "https://wa.me/916239103850?text=" + message,
+        "_blank"
+    );
+
+    // 📞 OPEN CALL SCREEN
+    window.location.href = "tel:6239103850";
+}
+
+// 🔥 SUBCATEGORY DATA
+const subcategories = {
+
+    ration: [
+        "Non-availability of ration",
+        "Poor quality",
+        "Delayed supply",
+        "CSD issue"
+    ],
+
+    accommodation: [
+        "Water supply",
+        "Electricity",
+        "Repairs",
+        "Sanitation issue"
+    ],
+
+    welfare: [
+        "Family issues",
+        "Financial stress",
+        "Counselling request",
+        "Children education"
+    ],
+
+    safety: [
+        "Harassment",
+        "Security safety",
+        "Domestic safety",
+        "Neighbour disputes"
+    ]
+};
+
+// CATEGORY
+function selectCategory(e, cat) {
+
+    document.getElementById("category").value = cat;
+
+    document.querySelectorAll(".box")
+    .forEach(b => b.classList.remove("active"));
+
+    e.currentTarget.classList.add("active");
+
+    let html = "";
+
+    subcategories[cat].forEach(item => {
+
+        html += `
+            <div class="sub-box"
+            onclick="selectSubcategory('${item}', this)">
+                ${item}
+            </div>
+        `;
+    });
+
+    document.getElementById("subcategoryBox").innerHTML = html;
+}
+
+// SUBCATEGORY
+function selectSubcategory(value, el) {
+
+    document.getElementById("subcategory").value = value;
+
+    document.querySelectorAll(".sub-box")
+    .forEach(b => b.classList.remove("active"));
+
+    el.classList.add("active");
+}
+
+// AUDIO
+let mediaRecorder;
+let audioChunks = [];
+
+async function startRecording() {
+
+    try {
+
+        const stream =
+        await navigator.mediaDevices.getUserMedia({
+            audio: true
+        });
+
+        mediaRecorder = new MediaRecorder(stream);
+
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable =
+        e => audioChunks.push(e.data);
+
+        mediaRecorder.onstop = () => {
+
+            const blob =
+            new Blob(audioChunks, {
+                type: 'audio/webm'
+            });
+
+            document.getElementById("audioPlayback").src =
+            URL.createObjectURL(blob);
+
+            const reader = new FileReader();
+
+            reader.readAsDataURL(blob);
+
+            reader.onloadend = () => {
+
+                document.getElementById("audioData").value =
+                reader.result;
+            };
+        };
+
+        mediaRecorder.start();
+
+    } catch (err) {
+
+        alert("Mic permission allow karo!");
+    }
+}
+
+function stopRecording() {
+
+    if (mediaRecorder) {
+
+        mediaRecorder.stop();
+    }
+}
+
+// SUBMIT
+document.getElementById("complaintForm")
+.addEventListener("submit", function(e){
+
+    e.preventDefault();
+
+    let formData = new FormData(this);
+
+    fetch("/complaint", {
+
+        method: "POST",
+
+        body: formData
+
+    })
+
+    .then(res => res.json())
+
+    .then(data => {
+
+    alert("Complaint Submitted! ID: " + data.id);
+
+    this.reset();
+
+    document.getElementById("audioPlayback").src = "";
+
+    document.getElementById("subcategoryBox").innerHTML = "";
+
+    // 2 second baad Home Page open hoga
+    // 2 second baad Home Page open hoga
+setTimeout(function () {
+    window.location.href = "/";
+}, 2000);
+})
+    .catch(() => alert("Submission failed"));
+});
+
+</script>
+
+</body>
+</html>
