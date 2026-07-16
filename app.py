@@ -64,11 +64,11 @@ def send_alert_email(data):
                         <hr>
 
                         <p><b>Complaint ID:</b> {data['complaint_id']}</p>
-<p><b>Name:</b> {data['name']}</p>
-<p><b>Husband Rank & Name:</b> {data['wo']}</p>
-<p><b>Contact:</b> {data['contact']}</p>
-<p><b>Category:</b> {data['category']}</p>
-<p><b>Subcategory:</b> {data['subcategory']}</p>
+                        <p><b>Name:</b> {data['name']}</p>
+                        <p><b>Husband Rank & Name:</b> {data['wo']}</p>
+                        <p><b>Contact:</b> {data['contact']}</p>
+                        <p><b>Category:</b> {data['category']}</p>
+                        <p><b>Subcategory:</b> {data['subcategory']}</p>
 
                         <div style="margin-top:15px;padding:15px;
                                     background:#fff3cd;
